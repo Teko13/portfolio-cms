@@ -2,7 +2,7 @@
 
 ## 🖼️ Vue d'ensemble
 
-La section "Ma Galerie" permet de gérer une collection d'images avec un carrousel interactif. Elle utilise le même bucket Supabase Storage que la section projets pour la cohérence.
+La section "Ma Galerie" permet de gérer une collection d'images avec une galerie en grille interactive. Elle utilise le même bucket Supabase Storage que la section projets pour la cohérence.
 
 ## 🚀 Fonctionnalités
 
@@ -13,12 +13,12 @@ La section "Ma Galerie" permet de gérer une collection d'images avec un carrous
 - ✅ **Stockage automatique** dans le bucket "medias"
 - ✅ **URL publique** générée automatiquement
 
-### **Carrousel d'images**
-- ✅ **Navigation** avec boutons précédent/suivant
-- ✅ **Indicateurs** pour naviguer directement vers une image
-- ✅ **Compteur** d'images (ex: 2/5)
-- ✅ **Aperçu** en plein écran
-- ✅ **Responsive** design
+### **Galerie d'images**
+- ✅ **Affichage en grille** responsive (2-3 colonnes)
+- ✅ **Aperçu** de toutes les images simultanément
+- ✅ **Effet hover** avec zoom et overlay
+- ✅ **Boutons de suppression** sur chaque image
+- ✅ **Design responsive** adaptatif
 
 ### **Gestion des images**
 - ✅ **Suppression individuelle** avec confirmation
@@ -112,16 +112,16 @@ Supprime toutes les photos de la galerie.
 ## 🎨 Interface utilisateur
 
 ### **Layout**
-- **Partie gauche** : Carrousel d'images avec navigation
+- **Partie gauche** : Galerie d'images en grille
 - **Partie droite** : Zone d'upload d'images
 - **Design cohérent** avec les autres sections
 
-### **Carrousel**
-- **Image principale** : 256px de hauteur, object-cover
-- **Boutons de navigation** : Flèches gauche/droite (si > 1 image)
-- **Indicateurs** : Points cliquables pour navigation directe
-- **Compteur** : Affichage de la position actuelle
-- **Bouton de suppression** : Rouge, en haut à droite de l'image
+### **Galerie**
+- **Grille responsive** : 2 colonnes sur mobile, 3 sur desktop
+- **Images carrées** : aspect-square avec object-cover
+- **Effet hover** : Zoom léger + overlay avec bouton de suppression
+- **Boutons de suppression** : Apparaissent au survol de chaque image
+- **Transitions fluides** : Animations CSS pour une meilleure UX
 
 ### **Zone d'upload**
 - **Zone drag & drop** : Bordure en pointillés
@@ -159,14 +159,15 @@ curl -X DELETE "http://localhost:3000/api/portfolio/galerie?id=1"
 3. **Upload** vers Supabase Storage
 4. **Génération** de l'URL publique
 5. **Ajout** automatique à la galerie
-6. **Affichage** dans le carrousel
+6. **Affichage** dans la grille
 
 ### **Suppression d'une image**
-1. **Clic** sur le bouton de suppression (X)
-2. **Confirmation** de suppression
-3. **Suppression** de la base de données
-4. **Suppression** automatique du storage
-5. **Mise à jour** du carrousel
+1. **Survol** de l'image pour afficher le bouton de suppression (X)
+2. **Clic** sur le bouton de suppression
+3. **Confirmation** de suppression
+4. **Suppression** de la base de données
+5. **Suppression** automatique du storage
+6. **Mise à jour** de la grille
 
 ## 🎯 Utilisation
 
@@ -174,21 +175,22 @@ curl -X DELETE "http://localhost:3000/api/portfolio/galerie?id=1"
 1. **Accédez** à `http://localhost:3000/dashboard/portfolio`
 2. **Ouvrez** la section "Ma Galerie"
 3. **Upload** des images via la zone de droite
-4. **Naviguez** dans le carrousel à gauche
-5. **Supprimez** les images avec le bouton X
+4. **Visualisez** toutes les images dans la grille à gauche
+5. **Supprimez** les images en survolant et cliquant sur le X
 
-### **Fonctionnalités du carrousel**
-- **Flèches** : Navigation image par image
-- **Points** : Navigation directe vers une image
-- **Compteur** : Position actuelle dans la galerie
+### **Fonctionnalités de la galerie**
+- **Vue d'ensemble** : Toutes les images visibles simultanément
+- **Navigation directe** : Clic sur n'importe quelle image
+- **Suppression individuelle** : Bouton X sur chaque image
 - **Responsive** : S'adapte aux différentes tailles d'écran
 
 ## 📝 Avantages
 
 1. **Simplicité** : Interface intuitive et facile à utiliser
 2. **Cohérence** : Même design que les autres sections
-3. **Performance** : Carrousel fluide et responsive
+3. **Vue d'ensemble** : Toutes les images visibles simultanément
 4. **Sécurité** : Suppression automatique des fichiers
 5. **Flexibilité** : Support de multiples formats d'image
+6. **UX améliorée** : Effets hover et transitions fluides
 
-La section Galerie est maintenant complètement opérationnelle ! 🎉
+La section Galerie est maintenant complètement opérationnelle avec un affichage en grille ! 🎉

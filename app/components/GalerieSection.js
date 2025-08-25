@@ -10,7 +10,6 @@ export default function GalerieSection() {
   const [message, setMessage] = useState('')
   const [photos, setPhotos] = useState([])
   const [uploadError, setUploadError] = useState('')
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const fileInputRef = useRef(null)
 
   // Charger les données au montage du composant
@@ -111,10 +110,6 @@ export default function GalerieSection() {
       if (result.success) {
         setMessage(result.message)
         loadPhotos()
-        // Ajuster l'index du carrousel si nécessaire
-        if (currentImageIndex >= photos.length - 1) {
-          setCurrentImageIndex(Math.max(0, photos.length - 2))
-        }
       } else {
         setMessage(result.error || 'Erreur lors de la suppression')
       }
@@ -137,7 +132,6 @@ export default function GalerieSection() {
       if (result.success) {
         setMessage(result.message)
         setPhotos([])
-        setCurrentImageIndex(0)
       } else {
         setMessage(result.error || 'Erreur lors de la suppression')
       }
@@ -145,22 +139,6 @@ export default function GalerieSection() {
       console.error('Erreur lors de la suppression:', error)
       setMessage('Erreur lors de la suppression')
     }
-  }
-
-  const nextImage = () => {
-    if (photos.length > 0) {
-      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % photos.length)
-    }
-  }
-
-  const prevImage = () => {
-    if (photos.length > 0) {
-      setCurrentImageIndex((prevIndex) => (prevIndex - 1 + photos.length) % photos.length)
-    }
-  }
-
-  const goToImage = (index) => {
-    setCurrentImageIndex(index)
   }
 
   return (
@@ -198,10 +176,10 @@ export default function GalerieSection() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Partie gauche - Carrousel */}
+              {/* Partie gauche - Galerie */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-white">Carrousel d'images</h3>
+                  <h3 className="text-lg font-medium text-white">Galerie d'images</h3>
                   {photos.length > 0 && (
                     <button
                       onClick={handleDeleteAll}
@@ -221,68 +199,31 @@ export default function GalerieSection() {
                     <p className="text-sm">Ajoutez des photos pour commencer</p>
                   </div>
                 ) : (
-                  <div className="relative">
-                    {/* Image principale */}
-                    <div className="relative h-64 bg-gray-800 rounded-lg overflow-hidden">
-                      <img 
-                        src={photos[currentImageIndex]?.photo_url} 
-                        alt={`Photo ${currentImageIndex + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      
-                      {/* Boutons de navigation */}
-                      {photos.length > 1 && (
-                        <>
-                          <button
-                            onClick={prevImage}
-                            className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-all duration-200"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={nextImage}
-                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-all duration-200"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </>
-                      )}
-                      
-                      {/* Bouton de suppression */}
-                      <button
-                        onClick={() => handleDelete(photos[currentImageIndex]?.id)}
-                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
-                        title="Supprimer cette photo"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    
-                    {/* Indicateurs */}
-                    {photos.length > 1 && (
-                      <div className="flex justify-center mt-4 space-x-2">
-                        {photos.map((_, index) => (
-                          <button
-                            key={index}
-                            onClick={() => goToImage(index)}
-                            className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                              index === currentImageIndex ? 'bg-white' : 'bg-gray-600 hover:bg-gray-500'
-                            }`}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {photos.map((photo, index) => (
+                      <div key={photo.id} className="relative group">
+                        <div className="aspect-square bg-gray-800 rounded-lg overflow-hidden">
+                          <img 
+                            src={photo.photo_url} 
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                           />
-                        ))}
+                          
+                          {/* Overlay avec bouton de suppression */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-200 flex items-center justify-center">
+                            <button
+                              onClick={() => handleDelete(photo.id)}
+                              className="opacity-0 group-hover:opacity-100 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                              title="Supprimer cette photo"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                    
-                    {/* Compteur */}
-                    <div className="text-center mt-2 text-gray-400 text-sm">
-                      {currentImageIndex + 1} / {photos.length}
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>
