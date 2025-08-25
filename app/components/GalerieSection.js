@@ -1,0 +1,352 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+
+export default function GalerieSection() {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [photos, setPhotos] = useState([])
+  const [uploadError, setUploadError] = useState('')
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const fileInputRef = useRef(null)
+
+  // Charger les données au montage du composant
+  useEffect(() => {
+    if (isExpanded) {
+      loadPhotos()
+    }
+  }, [isExpanded])
+
+  const loadPhotos = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/portfolio/galerie')
+      const result = await response.json()
+      
+      if (result.success) {
+        setPhotos(result.data || [])
+      } else {
+        setMessage('Erreur lors du chargement de la galerie')
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de la galerie:', error)
+      setMessage('Erreur lors du chargement de la galerie')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setUploading(true)
+    setUploadError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        // Ajouter directement la photo à la galerie
+        await addPhotoToGallery(result.data.url)
+      } else {
+        setUploadError(result.error || 'Erreur lors de l\'upload')
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error)
+      setUploadError('Erreur lors de l\'upload de l\'image')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const addPhotoToGallery = async (photoUrl) => {
+    setSaving(true)
+    try {
+      const response = await fetch('/api/portfolio/galerie', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photo_url: photoUrl }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setMessage('Photo ajoutée à la galerie avec succès')
+        loadPhotos() // Recharger la galerie
+      } else {
+        setMessage(result.error || 'Erreur lors de l\'ajout de la photo')
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la photo:', error)
+      setMessage('Erreur lors de l\'ajout de la photo')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) return
+
+    try {
+      const response = await fetch(`/api/portfolio/galerie?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setMessage(result.message)
+        loadPhotos()
+        // Ajuster l'index du carrousel si nécessaire
+        if (currentImageIndex >= photos.length - 1) {
+          setCurrentImageIndex(Math.max(0, photos.length - 2))
+        }
+      } else {
+        setMessage(result.error || 'Erreur lors de la suppression')
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+      setMessage('Erreur lors de la suppression')
+    }
+  }
+
+  const handleDeleteAll = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer toutes les photos de la galerie ? Cette action est irréversible.')) return
+
+    try {
+      const response = await fetch('/api/portfolio/galerie', {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setMessage(result.message)
+        setPhotos([])
+        setCurrentImageIndex(0)
+      } else {
+        setMessage(result.error || 'Erreur lors de la suppression')
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+      setMessage('Erreur lors de la suppression')
+    }
+  }
+
+  const nextImage = () => {
+    if (photos.length > 0) {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % photos.length)
+    }
+  }
+
+  const prevImage = () => {
+    if (photos.length > 0) {
+      setCurrentImageIndex((prevIndex) => (prevIndex - 1 + photos.length) % photos.length)
+    }
+  }
+
+  const goToImage = (index) => {
+    setCurrentImageIndex(index)
+  }
+
+  return (
+    <div className="border border-gray-600 rounded-lg bg-gray-900/50">
+      {/* En-tête de la section */}
+      <div 
+        className="flex items-center justify-between p-6 cursor-pointer hover:bg-gray-800/50 transition-all duration-200"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-white">Ma Galerie</h2>
+        </div>
+        <svg 
+          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* Contenu de la section */}
+      {isExpanded && (
+        <div className="p-6 border-t border-gray-600">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+              <span className="ml-3 text-white">Chargement...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Partie gauche - Carrousel */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-white">Carrousel d'images</h3>
+                  {photos.length > 0 && (
+                    <button
+                      onClick={handleDeleteAll}
+                      className="px-3 py-1 text-red-400 hover:text-red-300 text-sm border border-red-400 rounded hover:bg-red-900/20 transition-all duration-200"
+                    >
+                      Tout supprimer
+                    </button>
+                  )}
+                </div>
+                
+                {photos.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 border-2 border-dashed border-gray-600 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p>Aucune photo dans la galerie</p>
+                    <p className="text-sm">Ajoutez des photos pour commencer</p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {/* Image principale */}
+                    <div className="relative h-64 bg-gray-800 rounded-lg overflow-hidden">
+                      <img 
+                        src={photos[currentImageIndex]?.photo_url} 
+                        alt={`Photo ${currentImageIndex + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Boutons de navigation */}
+                      {photos.length > 1 && (
+                        <>
+                          <button
+                            onClick={prevImage}
+                            className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-all duration-200"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={nextImage}
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-all duration-200"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Bouton de suppression */}
+                      <button
+                        onClick={() => handleDelete(photos[currentImageIndex]?.id)}
+                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                        title="Supprimer cette photo"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    {/* Indicateurs */}
+                    {photos.length > 1 && (
+                      <div className="flex justify-center mt-4 space-x-2">
+                        {photos.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToImage(index)}
+                            className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                              index === currentImageIndex ? 'bg-white' : 'bg-gray-600 hover:bg-gray-500'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Compteur */}
+                    <div className="text-center mt-2 text-gray-400 text-sm">
+                      {currentImageIndex + 1} / {photos.length}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Partie droite - Upload */}
+              <div>
+                <h3 className="text-lg font-medium text-white mb-4">Ajouter une photo</h3>
+                
+                <div className="space-y-4">
+                  {/* Zone d'upload */}
+                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading || saving}
+                      className="w-full space-y-2"
+                    >
+                      {uploading || saving ? (
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
+                          <span className="ml-2 text-purple-400">
+                            {uploading ? 'Upload en cours...' : 'Ajout en cours...'}
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <div className="text-gray-400">
+                            <span className="font-medium">Cliquez pour uploader</span>
+                            <p className="text-sm">PNG, JPG, GIF jusqu'à 5MB</p>
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {uploadError && (
+                    <div className="bg-red-900/20 border border-red-400 rounded-lg p-3">
+                      <p className="text-red-400 text-sm">{uploadError}</p>
+                    </div>
+                  )}
+                  
+                  {/* Message */}
+                  {message && (
+                    <div className={`p-3 rounded-lg text-sm ${
+                      message.includes('succès') ? 'bg-green-900/20 border border-green-400 text-green-400' : 'bg-red-900/20 border border-red-400 text-red-400'
+                    }`}>
+                      {message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

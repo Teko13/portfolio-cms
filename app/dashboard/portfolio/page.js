@@ -3,6 +3,7 @@ import Sidebar from '@/app/components/Sidebar'
 import MoiSection from '@/app/components/MoiSection'
 import CompetencesSection from '@/app/components/CompetencesSection'
 import ProjetsSection from '@/app/components/ProjetsSection'
+import GalerieSection from '@/app/components/GalerieSection'
 
 export default function PortfolioPage() {
   return (
@@ -33,6 +34,9 @@ export default function PortfolioPage() {
               
               {/* Section Projets */}
               <ProjetsSection />
+              
+              {/* Section Galerie */}
+              <GalerieSection />
             </div>
           </div>
         </div>
