@@ -22,7 +22,7 @@ La section "Réseau" permet de gérer les liens vers vos réseaux sociaux et pro
 
 ## 🔧 Structure de données
 
-### **Table `ta_table`**
+### **Table `reseau`**
 ```sql
 {
   "table": "ta_table",
@@ -236,7 +236,7 @@ curl -X DELETE "http://localhost:3000/api/portfolio/reseau?id=1"
 ## 📝 Configuration requise
 
 ### **Base de données**
-Exécutez le script `reseau-setup.sql` dans votre base de données Supabase pour créer la table `ta_table`.
+Exécutez le script `reseau-setup.sql` dans votre base de données Supabase pour créer la table `reseau`.
 
 ### **Variables d'environnement**
 Assurez-vous que les variables suivantes sont configurées :

@@ -10,7 +10,7 @@ export async function GET() {
     )
     
     const { data, error } = await supabase
-      .from('ta_table')
+      .from('reseau')
       .select('*')
       .order('id', { ascending: true })
 
@@ -52,7 +52,7 @@ export async function POST(request) {
     console.log('Données d\'insertion:', insertData)
     
     const { data, error } = await supabase
-      .from('ta_table')
+      .from('reseau')
       .insert(insertData)
       .select()
       .single()
@@ -91,11 +91,11 @@ export async function PUT(request) {
     console.log('Données de modification reçues:', body)
     
     // Récupérer l'ancienne icône avant modification
-    const { data: oldData, error: fetchError } = await supabase
-      .from('ta_table')
-      .select('icon_url')
-      .eq('id', body.id)
-      .single()
+          const { data: oldData, error: fetchError } = await supabase
+        .from('reseau')
+        .select('icon_url')
+        .eq('id', body.id)
+        .single()
 
     if (fetchError && fetchError.code !== 'PGRST116') {
       console.error('Erreur lors de la récupération de l\'ancienne icône:', fetchError)
@@ -113,7 +113,7 @@ export async function PUT(request) {
     console.log('Données de mise à jour:', updateData)
     
     const { data, error } = await supabase
-      .from('ta_table')
+      .from('reseau')
       .update(updateData)
       .eq('id', body.id)
       .select()
@@ -177,7 +177,7 @@ export async function DELETE(request) {
     if (id) {
       // Récupérer l'élément avant suppression pour obtenir l'icon_url
       const { data: element, error: fetchError } = await supabase
-        .from('ta_table')
+        .from('reseau')
         .select('icon_url')
         .eq('id', id)
         .single()
@@ -188,7 +188,7 @@ export async function DELETE(request) {
 
       // Supprimer l'élément du réseau
       const { error } = await supabase
-        .from('ta_table')
+        .from('reseau')
         .delete()
         .eq('id', id)
 
@@ -224,7 +224,7 @@ export async function DELETE(request) {
     } else {
       // Récupérer tous les éléments avant suppression pour obtenir les icon_url
       const { data: elements, error: fetchError } = await supabase
-        .from('ta_table')
+        .from('reseau')
         .select('icon_url')
 
       if (fetchError) {
@@ -233,7 +233,7 @@ export async function DELETE(request) {
 
       // Supprimer tous les éléments du réseau
       const { error } = await supabase
-        .from('ta_table')
+        .from('reseau')
         .delete()
         .neq('id', 0) // Supprime toutes les entrées
 
