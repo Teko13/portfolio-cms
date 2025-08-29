@@ -40,11 +40,17 @@ export async function POST(request) {
     
     console.log('Données reçues pour la galerie:', body)
     
+    // Préparer les données d'insertion
+    const insertData = {
+      photo_url: body.photo_url
+    }
+    
+    // Ajouter le titre s'il existe
+    if (body.titre) insertData.titre = body.titre
+    
     const { data, error } = await supabase
       .from('ma_gallerie')
-      .insert({
-        photo_url: body.photo_url
-      })
+      .insert(insertData)
       .select()
       .single()
 

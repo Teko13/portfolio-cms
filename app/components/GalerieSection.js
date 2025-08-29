@@ -10,6 +10,9 @@ export default function GalerieSection() {
   const [message, setMessage] = useState('')
   const [photos, setPhotos] = useState([])
   const [uploadError, setUploadError] = useState('')
+  const [titre, setTitre] = useState('')
+  const [uploadedImageUrl, setUploadedImageUrl] = useState('')
+  const [imageUploaded, setImageUploaded] = useState(false)
   const fileInputRef = useRef(null)
 
   // Charger les données au montage du composant
@@ -57,8 +60,10 @@ export default function GalerieSection() {
       const result = await response.json()
 
       if (result.success) {
-        // Ajouter directement la photo à la galerie
-        await addPhotoToGallery(result.data.url)
+        // Stocker l'URL de l'image uploadée
+        setUploadedImageUrl(result.data.url)
+        setImageUploaded(true)
+        setUploadError('')
       } else {
         setUploadError(result.error || 'Erreur lors de l\'upload')
       }
@@ -70,7 +75,12 @@ export default function GalerieSection() {
     }
   }
 
-  const addPhotoToGallery = async (photoUrl) => {
+  const addPhotoToGallery = async () => {
+    if (!uploadedImageUrl) {
+      setMessage('Aucune image uploadée')
+      return
+    }
+    
     setSaving(true)
     try {
       const response = await fetch('/api/portfolio/galerie', {
@@ -78,13 +88,19 @@ export default function GalerieSection() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ photo_url: photoUrl }),
+        body: JSON.stringify({ 
+          photo_url: uploadedImageUrl,
+          titre: titre || null
+        }),
       })
 
       const result = await response.json()
 
       if (result.success) {
         setMessage('Photo ajoutée à la galerie avec succès')
+        setTitre('') // Réinitialiser le titre
+        setUploadedImageUrl('') // Réinitialiser l'URL de l'image
+        setImageUploaded(false) // Réinitialiser l'état d'upload
         loadPhotos() // Recharger la galerie
       } else {
         setMessage(result.error || 'Erreur lors de l\'ajout de la photo')
@@ -116,6 +132,16 @@ export default function GalerieSection() {
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
       setMessage('Erreur lors de la suppression')
+    }
+  }
+
+  const handleCancelUpload = () => {
+    setUploadedImageUrl('')
+    setImageUploaded(false)
+    setTitre('')
+    setUploadError('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -205,7 +231,7 @@ export default function GalerieSection() {
                         <div className="aspect-square bg-gray-800 rounded-lg overflow-hidden">
                           <img 
                             src={photo.photo_url} 
-                            alt={`Photo ${index + 1}`}
+                            alt={photo.titre || `Photo ${index + 1}`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                           />
                           
@@ -222,6 +248,15 @@ export default function GalerieSection() {
                             </button>
                           </div>
                         </div>
+                        
+                        {/* Titre de la photo */}
+                        {photo.titre && (
+                          <div className="mt-2 text-center">
+                            <p className="text-sm text-gray-300 font-medium truncate">
+                              {photo.titre}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -233,40 +268,93 @@ export default function GalerieSection() {
                 <h3 className="text-lg font-medium text-white mb-4">Ajouter une photo</h3>
                 
                 <div className="space-y-4">
-                  {/* Zone d'upload */}
-                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
+                  {/* Titre de la photo */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Titre de la photo (optionnel)
+                    </label>
                     <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
+                      type="text"
+                      value={titre}
+                      onChange={(e) => setTitre(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-600 rounded-lg bg-transparent text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
+                      placeholder="Ex: Photo de vacances, Portrait, etc."
                     />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading || saving}
-                      className="w-full space-y-2"
-                    >
-                      {uploading || saving ? (
-                        <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
-                          <span className="ml-2 text-purple-400">
-                            {uploading ? 'Upload en cours...' : 'Ajout en cours...'}
-                          </span>
-                        </div>
-                      ) : (
-                        <>
-                          <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                          <div className="text-gray-400">
-                            <span className="font-medium">Cliquez pour uploader</span>
-                            <p className="text-sm">PNG, JPG, GIF jusqu'à 5MB</p>
-                          </div>
-                        </>
-                      )}
-                    </button>
                   </div>
+
+                  {/* Zone d'upload */}
+                  {!imageUploaded ? (
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
+                                              <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*,.svg"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full space-y-2"
+                      >
+                        {uploading ? (
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400"></div>
+                            <span className="ml-2 text-purple-400">Upload en cours...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <div className="text-gray-400">
+                              <span className="font-medium">Cliquez pour uploader</span>
+                              <p className="text-sm">PNG, JPG, GIF, SVG jusqu'à 5MB</p>
+                            </div>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    /* Aperçu de l'image uploadée */
+                    <div className="space-y-4">
+                      <div className="border border-gray-600 rounded-lg p-4">
+                        <div className="aspect-square bg-gray-800 rounded-lg overflow-hidden mb-3">
+                          <img 
+                            src={uploadedImageUrl} 
+                            alt="Aperçu"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-400 text-center">Image uploadée avec succès</p>
+                      </div>
+                      
+                      {/* Boutons d'action */}
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={addPhotoToGallery}
+                          disabled={saving}
+                          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {saving ? (
+                            <div className="flex items-center justify-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Ajout en cours...
+                            </div>
+                          ) : (
+                            'Ajouter à la galerie'
+                          )}
+                        </button>
+                        <button
+                          onClick={handleCancelUpload}
+                          disabled={saving}
+                          className="px-4 py-2 border border-gray-600 text-gray-400 hover:text-gray-300 hover:bg-gray-800 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   
                   {uploadError && (
                     <div className="bg-red-900/20 border border-red-400 rounded-lg p-3">

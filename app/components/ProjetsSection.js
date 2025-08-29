@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { api } from '@/utils/api'
+import { uploadFile } from '@/utils/upload'
 
 export default function ProjetsSection() {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -32,14 +34,8 @@ export default function ProjetsSection() {
   const loadProjets = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/portfolio/projets')
-      const result = await response.json()
-      
-      if (result.success) {
-        setProjets(result.data || [])
-      } else {
-        setMessage('Erreur lors du chargement des projets')
-      }
+      const result = await api.get('/api/portfolio/projets')
+      setProjets(result.data || [])
     } catch (error) {
       console.error('Erreur lors du chargement des projets:', error)
       setMessage('Erreur lors du chargement des projets')
@@ -54,27 +50,17 @@ export default function ProjetsSection() {
     setMessage('')
 
     try {
-      const url = editingId ? '/api/portfolio/projets' : '/api/portfolio/projets'
-      const method = editingId ? 'PUT' : 'POST'
       const body = editingId ? { ...formData, id: editingId } : formData
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setMessage(result.message)
-        resetForm()
-        loadProjets()
+      if (editingId) {
+        await api.put('/api/portfolio/projets', body)
       } else {
-        setMessage(result.error || 'Erreur lors de la sauvegarde')
+        await api.post('/api/portfolio/projets', body)
       }
+
+      setMessage(editingId ? 'Projet modifié avec succès' : 'Projet ajouté avec succès')
+      resetForm()
+      loadProjets()
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
       setMessage('Erreur lors de la sauvegarde')
@@ -99,18 +85,9 @@ export default function ProjetsSection() {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) return
 
     try {
-      const response = await fetch(`/api/portfolio/projets?id=${id}`, {
-        method: 'DELETE',
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setMessage(result.message)
-        loadProjets()
-      } else {
-        setMessage(result.error || 'Erreur lors de la suppression')
-      }
+      const result = await api.delete(`/api/portfolio/projets?id=${id}`)
+      setMessage(result.message)
+      loadProjets()
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
       setMessage('Erreur lors de la suppression')
@@ -121,18 +98,9 @@ export default function ProjetsSection() {
     if (!confirm('Êtes-vous sûr de vouloir supprimer tous les projets ? Cette action est irréversible.')) return
 
     try {
-      const response = await fetch('/api/portfolio/projets', {
-        method: 'DELETE',
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setMessage(result.message)
-        setProjets([])
-      } else {
-        setMessage(result.error || 'Erreur lors de la suppression')
-      }
+      const result = await api.delete('/api/portfolio/projets')
+      setMessage(result.message)
+      setProjets([])
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
       setMessage('Erreur lors de la suppression')
@@ -160,23 +128,9 @@ export default function ProjetsSection() {
     setReordering(true)
 
     try {
-      const response = await fetch('/api/portfolio/projets/reorder', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ projects: reorderedItems }),
-      })
+      const responseResult = await api.put('/api/portfolio/projets/reorder', { projects: reorderedItems })
 
-      const responseResult = await response.json()
-
-      if (responseResult.success) {
-        setMessage('Ordre des projets mis à jour')
-      } else {
-        setMessage(responseResult.error || 'Erreur lors du réordonnancement')
-        // Recharger les projets en cas d'erreur
-        loadProjets()
-      }
+      setMessage('Ordre des projets mis à jour')
     } catch (error) {
       console.error('Erreur lors du réordonnancement:', error)
       setMessage('Erreur lors du réordonnancement')
@@ -211,22 +165,13 @@ export default function ProjetsSection() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      })
+      const result = await uploadFile('/api/upload', formData)
 
-      const result = await response.json()
-
-      if (result.success) {
-        setFormData(prev => ({
-          ...prev,
-          image_url: result.data.url
-        }))
-        setMessage('Image uploadée avec succès')
-      } else {
-        setUploadError(result.error || 'Erreur lors de l\'upload')
-      }
+      setFormData(prev => ({
+        ...prev,
+        image_url: result.data.url
+      }))
+      setMessage('Image uploadée avec succès')
     } catch (error) {
       console.error('Erreur lors de l\'upload:', error)
       setUploadError('Erreur lors de l\'upload de l\'image')
@@ -245,21 +190,8 @@ export default function ProjetsSection() {
     // Si il y a une image_url, la supprimer du storage
     if (formData.image_url) {
       try {
-        const response = await fetch('/api/upload/delete', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ imageUrl: formData.image_url }),
-        })
-
-        const result = await response.json()
-        
-        if (result.success) {
-          console.log('Image supprimée du storage:', formData.image_url)
-        } else {
-          console.error('Erreur lors de la suppression de l\'image:', result.error)
-        }
+        const result = await api.post('/api/upload/delete', { imageUrl: formData.image_url })
+        console.log('Image supprimée du storage:', formData.image_url)
       } catch (error) {
         console.error('Erreur lors de la suppression de l\'image:', error)
       }
@@ -439,13 +371,13 @@ export default function ProjetsSection() {
                     ) : (
                       <div className="space-y-3">
                         <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            className="hidden"
-                          />
+                                                  <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*,.svg"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
@@ -464,7 +396,7 @@ export default function ProjetsSection() {
                                 </svg>
                                 <div className="text-gray-400">
                                   <span className="font-medium">Cliquez pour uploader</span>
-                                  <p className="text-sm">PNG, JPG, GIF jusqu'à 5MB</p>
+                                  <p className="text-sm">PNG, JPG, GIF, SVG jusqu'à 5MB</p>
                                 </div>
                               </>
                             )}

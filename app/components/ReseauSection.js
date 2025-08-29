@@ -344,7 +344,7 @@ export default function ReseauSection() {
                         <input
                           ref={fileInputRef}
                           type="file"
-                          accept="image/*"
+                          accept="image/*,.svg"
                           onChange={handleFileChange}
                           className="hidden"
                         />
@@ -366,7 +366,7 @@ export default function ReseauSection() {
                               </svg>
                               <div className="text-gray-400">
                                 <span className="font-medium">Cliquez pour uploader une icône</span>
-                                <p className="text-sm">PNG, JPG, GIF jusqu'à 5MB</p>
+                                <p className="text-sm">PNG, JPG, GIF, SVG jusqu'à 5MB</p>
                               </div>
                             </>
                           )}

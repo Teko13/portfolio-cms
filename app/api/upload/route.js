@@ -37,10 +37,10 @@ export async function POST(request) {
     }
 
     // Vérifier le type de fichier
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: 'Type de fichier non autorisé. Utilisez JPEG, PNG, GIF ou WebP.' },
+        { success: false, error: 'Type de fichier non autorisé. Utilisez JPEG, PNG, GIF, WebP ou SVG.' },
         { status: 400 }
       )
     }
