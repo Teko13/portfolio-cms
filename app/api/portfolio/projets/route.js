@@ -67,6 +67,7 @@ export async function POST(request) {
     if (body.image_url) insertData.image_url = body.image_url
     if (body.acces_url) insertData.acces_url = body.acces_url
     if (body.source_url) insertData.source_url = body.source_url
+    if (body.category) insertData.category = body.category
     
     console.log('Données d\'insertion:', insertData)
     

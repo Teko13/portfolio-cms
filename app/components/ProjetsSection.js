@@ -17,7 +17,8 @@ export default function ProjetsSection() {
     description: '',
     image_url: '',
     acces_url: '',
-    source_url: ''
+    source_url: '',
+    category: ''
   })
   const [reordering, setReordering] = useState(false)
 
@@ -89,7 +90,8 @@ export default function ProjetsSection() {
       description: projet.description || '',
       image_url: projet.image_url || '',
       acces_url: projet.acces_url || '',
-      source_url: projet.source_url || ''
+      source_url: projet.source_url || '',
+      category: projet.category || ''
     })
   }
 
@@ -192,7 +194,8 @@ export default function ProjetsSection() {
       description: '',
       image_url: '',
       acces_url: '',
-      source_url: ''
+      source_url: '',
+      category: ''
     })
     setUploadError('')
   }
@@ -368,6 +371,20 @@ export default function ProjetsSection() {
                       onChange={(e) => setFormData({ ...formData, titre: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-600 rounded-lg bg-transparent text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                       placeholder="Titre du projet"
+                    />
+                  </div>
+
+                  {/* Catégorie */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Catégorie
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-600 rounded-lg bg-transparent text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                      placeholder="Ex: Web, Mobile, IA, etc."
                     />
                   </div>
 
@@ -581,6 +598,14 @@ function ProjetCard({ projet, index, totalProjects, onEdit, onDelete, onMoveUp, 
                   </span>
                   <h4 className="text-white font-medium line-clamp-1">{projet.titre}</h4>
                 </div>
+                
+                {projet.category && (
+                  <div className="mb-2">
+                    <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
+                      {projet.category}
+                    </span>
+                  </div>
+                )}
                 
                 <div className={`transition-all duration-300 ${
                   isExpanded ? 'block' : 'line-clamp-2'
