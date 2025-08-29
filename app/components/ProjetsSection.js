@@ -19,6 +19,7 @@ export default function ProjetsSection() {
     acces_url: '',
     source_url: ''
   })
+  const [reordering, setReordering] = useState(false)
 
   // Charger les données au montage du composant
   useEffect(() => {
@@ -133,6 +134,54 @@ export default function ProjetsSection() {
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
       setMessage('Erreur lors de la suppression')
+    }
+  }
+
+  const handleMoveProject = async (currentIndex, direction) => {
+    if (direction === 'up' && currentIndex === 0) return
+    if (direction === 'down' && currentIndex === projets.length - 1) return
+
+    const reorderedItems = Array.from(projets)
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    
+    // Échanger les positions
+    const temp = reorderedItems[currentIndex];
+    reorderedItems[currentIndex] = reorderedItems[targetIndex];
+    reorderedItems[targetIndex] = temp;
+
+    // Mettre à jour les index dans l'état local
+    reorderedItems.forEach((projet, newIndex) => {
+      projet.index = newIndex + 1;
+    });
+
+    setProjets(reorderedItems)
+    setReordering(true)
+
+    try {
+      const response = await fetch('/api/portfolio/projets/reorder', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ projects: reorderedItems }),
+      })
+
+      const responseResult = await response.json()
+
+      if (responseResult.success) {
+        setMessage('Ordre des projets mis à jour')
+      } else {
+        setMessage(responseResult.error || 'Erreur lors du réordonnancement')
+        // Recharger les projets en cas d'erreur
+        loadProjets()
+      }
+    } catch (error) {
+      console.error('Erreur lors du réordonnancement:', error)
+      setMessage('Erreur lors du réordonnancement')
+      // Recharger les projets en cas d'erreur
+      loadProjets()
+    } finally {
+      setReordering(false)
     }
   }
 
@@ -260,14 +309,22 @@ export default function ProjetsSection() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-white">Liste des projets</h3>
-                  {projets.length > 0 && (
-                    <button
-                      onClick={handleDeleteAll}
-                      className="px-3 py-1 text-red-400 hover:text-red-300 text-sm border border-red-400 rounded hover:bg-red-900/20 transition-all duration-200"
-                    >
-                      Tout supprimer
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {reordering && (
+                      <div className="flex items-center text-blue-400 text-sm">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mr-2"></div>
+                        Mise à jour...
+                      </div>
+                    )}
+                    {projets.length > 0 && (
+                      <button
+                        onClick={handleDeleteAll}
+                        className="px-3 py-1 text-red-400 hover:text-red-300 text-sm border border-red-400 rounded hover:bg-red-900/20 transition-all duration-200"
+                      >
+                        Tout supprimer
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
@@ -276,12 +333,16 @@ export default function ProjetsSection() {
                       Aucun projet ajouté
                     </div>
                   ) : (
-                    projets.map((projet) => (
+                    projets.map((projet, index) => (
                       <ProjetCard
                         key={projet.id}
                         projet={projet}
+                        index={index}
+                        totalProjects={projets.length}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        onMoveUp={() => handleMoveProject(index, 'up')}
+                        onMoveDown={() => handleMoveProject(index, 'down')}
                       />
                     ))
                   )}
@@ -490,7 +551,7 @@ export default function ProjetsSection() {
 }
 
 // Composant pour une carte de projet
-function ProjetCard({ projet, onEdit, onDelete }) {
+function ProjetCard({ projet, index, totalProjects, onEdit, onDelete, onMoveUp, onMoveDown }) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
@@ -514,7 +575,12 @@ function ProjetCard({ projet, onEdit, onDelete }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <h4 className="text-white font-medium mb-2 line-clamp-1">{projet.titre}</h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full font-bold">
+                    #{projet.index || 'N/A'}
+                  </span>
+                  <h4 className="text-white font-medium line-clamp-1">{projet.titre}</h4>
+                </div>
                 
                 <div className={`transition-all duration-300 ${
                   isExpanded ? 'block' : 'line-clamp-2'
@@ -552,6 +618,34 @@ function ProjetCard({ projet, onEdit, onDelete }) {
               
               {/* Boutons d'action */}
               <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                {/* Boutons de déplacement */}
+                <div className="flex flex-col space-y-1">
+                  <button
+                    onClick={onMoveUp}
+                    disabled={index === 0}
+                    className={`p-1 text-gray-400 hover:text-gray-300 hover:bg-gray-900/20 rounded transition-all duration-200 ${
+                      index === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    title="Monter"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={onMoveDown}
+                    disabled={index === totalProjects - 1}
+                    className={`p-1 text-gray-400 hover:text-gray-300 hover:bg-gray-900/20 rounded transition-all duration-200 ${
+                      index === totalProjects - 1 ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    title="Descendre"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+                
                 <button
                   onClick={() => onEdit(projet)}
                   className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20 rounded transition-all duration-200"

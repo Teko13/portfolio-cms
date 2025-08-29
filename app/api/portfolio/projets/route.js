@@ -12,7 +12,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('projet')
       .select('*')
-      .order('id', { ascending: true })
+      .order('index', { ascending: true })
 
     if (error) throw error
 
@@ -40,11 +40,27 @@ export async function POST(request) {
     
     console.log('Données reçues:', body)
     
+    // Récupérer le nombre de projets existants pour calculer l'index
+    const { count, error: countError } = await supabase
+      .from('projet')
+      .select('*', { count: 'exact', head: true })
+
+    if (countError) {
+      console.error('Erreur lors du comptage des projets:', countError)
+      return NextResponse.json(
+        { success: false, error: 'Erreur lors du calcul de l\'index' },
+        { status: 500 }
+      )
+    }
+
+    const nextIndex = (count || 0) + 1
+    
     // Préparer les données d'insertion
     const insertData = {
       titre: body.titre,
       description: body.description,
-      cree_le: new Date().toISOString() // Ajouter la date de création
+      cree_le: new Date().toISOString(), // Ajouter la date de création
+      index: nextIndex // Ajouter l'index automatiquement
     }
     
     // Ajouter les champs optionnels seulement s'ils existent
