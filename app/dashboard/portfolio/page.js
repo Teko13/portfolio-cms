@@ -6,6 +6,7 @@ import ProjetsSection from '@/app/components/ProjetsSection'
 import GalerieSection from '@/app/components/GalerieSection'
 import ReseauSection from '@/app/components/ReseauSection'
 import ParcoursSection from '@/app/components/ParcoursSection'
+import LoisirsSection from '@/app/components/LoisirsSection'
 
 export default function PortfolioPage() {
   return (
@@ -45,6 +46,9 @@ export default function PortfolioPage() {
               
               {/* Section Parcours */}
               <ParcoursSection />
+              
+              {/* Section Loisirs */}
+              <LoisirsSection />
             </div>
           </div>
         </div>
