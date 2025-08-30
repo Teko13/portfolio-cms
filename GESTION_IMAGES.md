@@ -1,4 +1,4 @@
-# Gestion Automatique des Images - Section Projets
+# Gestion Automatique des Images et Documents
 
 ## 🗑️ Suppression Automatique des Images
 
@@ -22,6 +22,28 @@
 - ✅ **API dédiée** : `/api/upload/delete` pour supprimer une image spécifique
 - ✅ **Feedback utilisateur** : Messages de confirmation et gestion d'erreurs
 
+## 📄 Gestion Automatique des CV
+
+### **Fonctionnalités implémentées**
+
+#### 1. **CV temporaires (téléchargeables uniquement)**
+
+- ✅ **Suppression automatique** : Les CV temporaires sont supprimés après 3 minutes
+- ✅ **Timer côté serveur** : Utilisation de `setTimeout` pour programmer la suppression
+- ✅ **Logs de débogage** : Confirmation de suppression dans les logs
+
+#### 2. **CV sauvegardés (stockés en base)**
+
+- ✅ **Suppression de l'ancien CV** : L'ancien CV est supprimé avant de sauvegarder le nouveau
+- ✅ **Vérification de l'existant** : Récupération de l'URL du CV actuel depuis la table `moi`
+- ✅ **Extraction du nom de fichier** : Fonction pour extraire le nom depuis l'URL Supabase
+- ✅ **Gestion d'erreurs** : Les erreurs de suppression n'empêchent pas la création du nouveau CV
+
+#### 3. **Fonctions utilitaires**
+
+- ✅ **`extractFileNameFromUrl(url)`** : Extrait le nom du fichier depuis une URL Supabase
+- ✅ **`deleteFileFromStorage(supabase, fileName)`** : Supprime un fichier du bucket `docs`
+
 ## 🔧 APIs implémentées
 
 ### **API de suppression d'image** (`/api/upload/delete`)
@@ -44,6 +66,30 @@ Content-Type: application/json
 }
 ```
 
+### **API de génération de CV améliorée** (`/api/cv/generate`)
+
+- **CV temporaires** : Suppression automatique après 3 minutes
+- **CV sauvegardés** : Suppression de l'ancien CV avant création du nouveau
+- **Gestion d'erreurs** : Logs détaillés pour le débogage
+
+**Réponse pour CV temporaire :**
+```json
+{
+  "success": true,
+  "downloadUrl": "https://...",
+  "message": "CV généré avec succès (sera supprimé automatiquement dans 3 minutes)"
+}
+```
+
+**Réponse pour CV sauvegardé :**
+```json
+{
+  "success": true,
+  "downloadUrl": "https://...",
+  "message": "CV généré et sauvegardé avec succès"
+}
+```
+
 ### **API de suppression de projet améliorée** (`/api/portfolio/projets`)
 
 - Récupère l'`image_url` avant suppression
@@ -62,6 +108,7 @@ Content-Type: application/json
 
 - ✅ `app/api/portfolio/projets/route.js` - Suppression automatique dans DELETE et PUT
 - ✅ `app/api/upload/delete/route.js` - Nouvelle API de suppression d'image
+- ✅ `app/api/cv/generate/route.js` - Suppression automatique des CV temporaires et sauvegardés
 
 ### **Composants**
 
@@ -90,13 +137,36 @@ curl -X POST http://localhost:3000/api/upload/delete \
   -d '{"imageUrl":"https://..."}'
 ```
 
+### **Gestion automatique des CV**
+
+```bash
+# 1. Générer un CV temporaire (supprimé après 3 minutes)
+curl -X POST http://localhost:3000/api/cv/generate \
+  -H "Content-Type: application/json" \
+  -d '{"cvData": {...}, "saveAsCV": false}'
+
+# 2. Générer un CV sauvegardé (ancien CV supprimé automatiquement)
+curl -X POST http://localhost:3000/api/cv/generate \
+  -H "Content-Type: application/json" \
+  -d '{"cvData": {...}, "saveAsCV": true}'
+```
+
 ## 🔍 Logs de débogage
 
-Les opérations de suppression d'images sont loggées dans la console :
+Les opérations de suppression d'images et de CV sont loggées dans la console :
 
+### **Images**
 ```
 Suppression de l'image: projet_1755993720202_53eidxvfkcf.jpeg
 Image supprimée avec succès: projet_1755993720202_53eidxvfkcf.jpeg
+```
+
+### **CV**
+```
+Suppression de l'ancien CV: cv_1755993720202.pdf
+Fichier supprimé avec succès: cv_1755993720202.pdf
+Suppression automatique du CV temporaire: cv_1755993720203.pdf
+Fichier supprimé avec succès: cv_1755993720203.pdf
 ```
 
 ## ⚠️ Gestion d'erreurs
