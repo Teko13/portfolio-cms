@@ -42,90 +42,59 @@ export default function CVPreview({ cvData }) {
 
   const renderSection = (section) => {
     const renderContent = () => {
-      switch (section.type) {
-        case 'text':
-          return (
-            <div className="text-sm text-gray-800 leading-relaxed">
-              {section.content || 'Contenu à ajouter...'}
-            </div>
-          )
-
-        case 'skills':
-          return (
-            <div className="space-y-4">
-              {section.content && section.content.length > 0 ? (
-                section.content.map((skill, index) => (
-                  <div key={index} className="mb-3">
-                    <h4 className="font-semibold text-sm text-black mb-1">
-                      {skill.title}
-                    </h4>
-                    <p className="text-xs text-gray-600 italic mb-1">
-                      {skill.description}
-                    </p>
-                    <p className="text-xs text-gray-700">
-                      Technologies: {skill.level || 'Niveau non spécifié'}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-600">Aucune compétence ajoutée</p>
-              )}
-            </div>
-          )
-
-        case 'projects':
-          return (
-            <div className="space-y-4">
-              {section.content && section.content.length > 0 ? (
-                section.content.map((project, index) => (
-                  <div key={index} className="mb-3">
-                    <h4 className="font-semibold text-sm text-black mb-1">
-                      {project.title}
-                    </h4>
-                    <p className="text-xs text-gray-800 mb-1">
-                      {project.description}
-                    </p>
-                    <p className="text-xs text-gray-600 italic">
-                      Technologies: {project.technologies}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-600">Aucun projet ajouté</p>
-              )}
-            </div>
-          )
-
-        case 'education':
-          return (
-            <div className="space-y-4">
-              {section.content && section.content.length > 0 ? (
-                section.content.map((edu, index) => (
-                  <div key={index} className="mb-3">
-                    <h4 className="font-semibold text-sm text-black mb-1">
-                      {edu.title}
-                    </h4>
-                    <p className="text-xs text-gray-800 mb-1">
-                      {edu.school}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {formatDate(edu.date)}
-                    </p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-600">Aucune formation ajoutée</p>
-              )}
-            </div>
-          )
-
-        default:
-          return (
-            <div className="text-sm text-gray-800">
-              {section.content || 'Contenu à ajouter...'}
-            </div>
-          )
+      // Gestion de l'ancien format (content est une chaîne)
+      if (typeof section.content === 'string') {
+        return (
+          <div className="text-sm text-gray-800 leading-relaxed">
+            {section.content || 'Contenu à ajouter...'}
+          </div>
+        )
       }
+
+      // Gestion du nouveau format (content est un tableau)
+      if (!section.content || !Array.isArray(section.content) || section.content.length === 0) {
+        return <p className="text-sm text-gray-600">Aucun contenu ajouté</p>
+      }
+
+      return (
+        <div className="space-y-3">
+          {section.content.map((element, index) => {
+            switch (element.type) {
+              case 'subtitle':
+                return (
+                  <h4 key={element.id || index} className="font-semibold text-sm text-black mb-1">
+                    {element.content}
+                  </h4>
+                )
+              
+              case 'text':
+                return (
+                  <p key={element.id || index} className="text-sm text-gray-800 leading-relaxed mb-2">
+                    {element.content}
+                  </p>
+                )
+              
+              case 'list':
+                return (
+                  <ul key={element.id || index} className="list-disc list-inside text-sm text-gray-800 mb-2">
+                    {element.content && Array.isArray(element.content) && element.content.length > 0 ? (
+                      element.content.map((item, itemIndex) => (
+                        <li key={itemIndex} className="mb-1">
+                          {item}
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-gray-600">Aucun élément dans la liste</li>
+                    )}
+                  </ul>
+                )
+              
+              default:
+                return null
+            }
+          })}
+        </div>
+      )
     }
 
     return (

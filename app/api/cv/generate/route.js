@@ -2,6 +2,32 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import puppeteer from 'puppeteer'
 
+// Fonction pour extraire le nom du fichier depuis une URL Supabase
+function extractFileNameFromUrl(url) {
+  if (!url) return null
+  const parts = url.split('/')
+  return parts[parts.length - 1]
+}
+
+// Fonction pour supprimer un fichier du storage
+async function deleteFileFromStorage(supabase, fileName) {
+  if (!fileName) return
+  
+  try {
+    const { error } = await supabase.storage
+      .from('docs')
+      .remove([fileName])
+    
+    if (error) {
+      console.error('Erreur lors de la suppression du fichier:', error)
+    } else {
+      console.log(`Fichier supprimé avec succès: ${fileName}`)
+    }
+  } catch (error) {
+    console.error('Erreur lors de la suppression du fichier:', error)
+  }
+}
+
 // POST - Générer le CV en PDF
 export async function POST(request) {
   try {
@@ -19,6 +45,28 @@ export async function POST(request) {
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
+
+    // Si saveAsCV est true, supprimer l'ancien CV s'il existe
+    if (saveAsCV) {
+      try {
+        // Récupérer l'ancien CV URL
+        const { data: userData, error: userError } = await supabase
+          .from('moi')
+          .select('cv_url')
+          .eq('id', 1)
+          .single()
+
+        if (!userError && userData && userData.cv_url) {
+          const oldFileName = extractFileNameFromUrl(userData.cv_url)
+          if (oldFileName) {
+            console.log(`Suppression de l'ancien CV: ${oldFileName}`)
+            await deleteFileFromStorage(supabase, oldFileName)
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération/suppression de l\'ancien CV:', error)
+      }
+    }
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('docs')
@@ -54,12 +102,18 @@ export async function POST(request) {
           { status: 500 }
         )
       }
+    } else {
+      // Pour les CV temporaires, programmer la suppression après 3 minutes
+      setTimeout(async () => {
+        console.log(`Suppression automatique du CV temporaire: ${fileName}`)
+        await deleteFileFromStorage(supabase, fileName)
+      }, 3 * 60 * 1000) // 3 minutes en millisecondes
     }
 
     return NextResponse.json({
       success: true,
       downloadUrl: publicUrl,
-      message: saveAsCV ? 'CV généré et sauvegardé avec succès' : 'CV généré avec succès'
+      message: saveAsCV ? 'CV généré et sauvegardé avec succès' : 'CV généré avec succès (sera supprimé automatiquement dans 3 minutes)'
     })
 
   } catch (error) {
@@ -86,55 +140,34 @@ function generateCVHTML(cvData) {
   const renderSection = (section) => {
     let content = ''
     
-    switch (section.type) {
-      case 'text':
-        content = `<p class="text-sm text-gray-800 leading-relaxed">${section.content || 'Contenu à ajouter...'}</p>`
-        break
-      
-      case 'skills':
-        if (section.content && section.content.length > 0) {
-          content = section.content.map(skill => `
-            <div class="mb-3">
-              <h4 class="font-semibold text-sm text-black mb-1">${skill.title}</h4>
-              <p class="text-xs text-gray-600 italic mb-1">${skill.description}</p>
-              <p class="text-xs text-gray-700">Technologies: ${skill.level || 'Niveau non spécifié'}</p>
-            </div>
-          `).join('')
-        } else {
-          content = '<p class="text-sm text-gray-600">Aucune compétence ajoutée</p>'
+    // Gestion de l'ancien format (content est une chaîne)
+    if (typeof section.content === 'string') {
+      content = `<p class="text-sm text-gray-800 leading-relaxed">${section.content || 'Contenu à ajouter...'}</p>`
+    }
+    // Gestion du nouveau format (content est un tableau)
+    else if (!section.content || !Array.isArray(section.content) || section.content.length === 0) {
+      content = '<p class="text-sm text-gray-600">Aucun contenu ajouté</p>'
+    } else {
+      content = section.content.map(element => {
+        switch (element.type) {
+          case 'subtitle':
+            return `<h4 class="font-semibold text-sm text-black mb-1">${element.content}</h4>`
+          
+          case 'text':
+            return `<p class="text-sm text-gray-800 leading-relaxed mb-2">${element.content}</p>`
+          
+          case 'list':
+            if (element.content && Array.isArray(element.content) && element.content.length > 0) {
+              const listItems = element.content.map(item => `<li class="mb-1">${item}</li>`).join('')
+              return `<ul class="list-disc list-inside text-sm text-gray-800 mb-2">${listItems}</ul>`
+            } else {
+              return '<ul class="list-disc list-inside text-sm text-gray-800 mb-2"><li class="text-gray-600">Aucun élément dans la liste</li></ul>'
+            }
+          
+          default:
+            return ''
         }
-        break
-      
-      case 'projects':
-        if (section.content && section.content.length > 0) {
-          content = section.content.map(project => `
-            <div class="mb-3">
-              <h4 class="font-semibold text-sm text-black mb-1">${project.title}</h4>
-              <p class="text-xs text-gray-800 mb-1">${project.description}</p>
-              <p class="text-xs text-gray-600 italic">Technologies: ${project.technologies}</p>
-            </div>
-          `).join('')
-        } else {
-          content = '<p class="text-sm text-gray-600">Aucun projet ajouté</p>'
-        }
-        break
-      
-      case 'education':
-        if (section.content && section.content.length > 0) {
-          content = section.content.map(edu => `
-            <div class="mb-3">
-              <h4 class="font-semibold text-sm text-black mb-1">${edu.title}</h4>
-              <p class="text-xs text-gray-800 mb-1">${edu.school}</p>
-              <p class="text-xs text-gray-600">${formatDate(edu.date)}</p>
-            </div>
-          `).join('')
-        } else {
-          content = '<p class="text-sm text-gray-600">Aucune formation ajoutée</p>'
-        }
-        break
-      
-      default:
-        content = `<p class="text-sm text-gray-800">${section.content || 'Contenu à ajouter...'}</p>`
+      }).join('')
     }
 
     return `

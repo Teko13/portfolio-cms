@@ -21,6 +21,15 @@ export default function CVSidebar({
     title: '',
     type: 'text'
   })
+  const [expandedSections, setExpandedSections] = useState({
+    personalInfo: true,
+    resume: true,
+    skills: true,
+    projects: true,
+    education: true,
+    hobbies: true
+  })
+  const [showAddElement, setShowAddElement] = useState({})
 
   const handleMoveSection = (sectionId, direction) => {
     const sections = [...cvData.sections]
@@ -59,109 +68,247 @@ export default function CVSidebar({
     }
   }
 
+  const toggleSection = (sectionId) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }))
+  }
+
+  const toggleAddElement = (sectionId) => {
+    setShowAddElement(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }))
+  }
+
+  const addElementToSection = (sectionId, elementType) => {
+    const newElement = {
+      id: `element_${Date.now()}`,
+      type: elementType,
+      content: elementType === 'list' ? [] : ''
+    }
+
+    const section = cvData.sections.find(s => s.id === sectionId)
+    let currentContent = section?.content || []
+    
+    // Si le contenu est une chaîne (ancien format), on le convertit en tableau
+    if (typeof currentContent === 'string') {
+      currentContent = []
+    }
+    
+    // S'assurer que currentContent est un tableau
+    if (!Array.isArray(currentContent)) {
+      currentContent = []
+    }
+
+    onUpdateSection(sectionId, {
+      content: [...currentContent, newElement]
+    })
+
+    setShowAddElement(prev => ({
+      ...prev,
+      [sectionId]: false
+    }))
+  }
+
+  const removeElementFromSection = (sectionId, elementId) => {
+    const section = cvData.sections.find(s => s.id === sectionId)
+    if (section && Array.isArray(section.content)) {
+      const updatedContent = section.content.filter(element => element.id !== elementId)
+      onUpdateSection(sectionId, { content: updatedContent })
+    }
+  }
+
+  const updateElementContent = (sectionId, elementId, content) => {
+    const section = cvData.sections.find(s => s.id === sectionId)
+    if (section && Array.isArray(section.content)) {
+      const updatedContent = section.content.map(element => 
+        element.id === elementId ? { ...element, content } : element
+      )
+      onUpdateSection(sectionId, { content: updatedContent })
+    }
+  }
+
   const renderSectionEditor = (section) => {
+    const isExpanded = expandedSections[section.id] || false
     const isPersonalInfo = section.id === 'personalInfo'
 
     return (
-      <div key={section.id} className="bg-gray-700 rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white font-semibold text-sm">
-            {section.title}
-          </h3>
+      <div key={section.id} className="bg-gray-800 rounded-lg border border-gray-700 mb-4">
+        {/* En-tête du bloc */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div 
+            className="flex items-center cursor-pointer flex-1"
+            onClick={() => toggleSection(section.id)}
+          >
+            <div className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center mr-3">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-white font-semibold text-sm truncate max-w-[100px]">
+              {section.title}
+            </h3>
+            <svg
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ml-2 ${
+                isExpanded ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          
+          {/* Bouton de suppression */}
           {!section.locked && (
             <button
               onClick={() => onRemoveSection(section.id)}
-              className="text-red-400 hover:text-red-300 text-xs"
+              className="w-6 h-6 bg-red-600 text-white rounded text-xs hover:bg-red-500 transition-colors"
+              title="Supprimer la section"
             >
-              Supprimer
+              ×
             </button>
           )}
         </div>
 
-        {/* Éditeur de titre */}
-        <div className="mb-3">
-          <label className="block text-gray-300 text-xs mb-1">Titre</label>
-          <input
-            type="text"
-            value={section.title}
-            onChange={(e) => onUpdateSection(section.id, { title: e.target.value.toUpperCase() })}
-            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={section.locked}
-          />
-        </div>
+        {isExpanded && (
+          <div className="p-4">
+            {/* Éditeur de titre */}
+            <div className="mb-4">
+              <label className="block text-gray-300 text-xs mb-2">Titre de la section</label>
+              <input
+                type="text"
+                value={section.title}
+                onChange={(e) => onUpdateSection(section.id, { title: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={section.locked}
+              />
+            </div>
 
-        {/* Éditeur de contenu selon le type */}
-        {section.type === 'text' && (
-          <div className="mb-3">
-            <label className="block text-gray-300 text-xs mb-1">Contenu</label>
-            <textarea
-              value={section.content}
-              onChange={(e) => onUpdateSection(section.id, { content: e.target.value })}
-              rows={4}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              placeholder="Entrez le contenu de cette section..."
-            />
-          </div>
-        )}
-
-        {section.type === 'skills' && (
-          <div className="mb-3">
-            <label className="block text-gray-300 text-xs mb-1">Compétences</label>
-            <div className="text-gray-400 text-xs">
-              {section.content && section.content.length > 0 ? (
-                <div className="space-y-2">
-                  {section.content.map((skill, index) => (
-                    <div key={index} className="bg-gray-600 p-2 rounded">
-                      <div className="font-medium">{skill.title}</div>
-                      <div className="text-gray-300">{skill.description}</div>
-                      <div className="text-gray-400">Niveau: {skill.level}</div>
+            {/* Contenu de la section */}
+            <div className="space-y-3">
+              {Array.isArray(section.content) && section.content.length > 0 ? (
+                section.content.map((element, index) => (
+                  <div key={element.id} className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-400 uppercase tracking-wide">
+                        {element.type === 'subtitle' ? 'Sous-titre' : 
+                         element.type === 'text' ? 'Texte' : 'Liste'}
+                      </span>
+                      <button
+                        onClick={() => removeElementFromSection(section.id, element.id)}
+                        className="text-red-400 hover:text-red-300 text-xs"
+                      >
+                        Supprimer
+                      </button>
                     </div>
-                  ))}
-                </div>
+                    
+                    {element.type === 'subtitle' && (
+                      <input
+                        type="text"
+                        value={element.content}
+                        onChange={(e) => updateElementContent(section.id, element.id, e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Entrez le sous-titre..."
+                      />
+                    )}
+                    
+                    {element.type === 'text' && (
+                      <textarea
+                        value={element.content}
+                        onChange={(e) => updateElementContent(section.id, element.id, e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        placeholder="Entrez le texte..."
+                      />
+                    )}
+                    
+                    {element.type === 'list' && (
+                      <div className="space-y-2">
+                        {element.content && element.content.length > 0 ? (
+                          element.content.map((item, itemIndex) => (
+                            <div key={itemIndex} className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={item}
+                                onChange={(e) => {
+                                  const newList = [...element.content]
+                                  newList[itemIndex] = e.target.value
+                                  updateElementContent(section.id, element.id, newList)
+                                }}
+                                className="flex-1 px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder={`Élément ${itemIndex + 1}`}
+                              />
+                              <button
+                                onClick={() => {
+                                  const newList = element.content.filter((_, i) => i !== itemIndex)
+                                  updateElementContent(section.id, element.id, newList)
+                                }}
+                                className="text-red-400 hover:text-red-300 text-xs"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-xs">Aucun élément dans la liste</p>
+                        )}
+                        <button
+                          onClick={() => {
+                            const newList = [...(element.content || []), '']
+                            updateElementContent(section.id, element.id, newList)
+                          }}
+                          className="text-blue-400 hover:text-blue-300 text-xs"
+                        >
+                          + Ajouter un élément
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
               ) : (
-                <p>Aucune compétence disponible</p>
+                <p className="text-gray-400 text-xs text-center py-4">
+                  Aucun élément dans cette section
+                </p>
               )}
             </div>
-          </div>
-        )}
 
-        {section.type === 'projects' && (
-          <div className="mb-3">
-            <label className="block text-gray-300 text-xs mb-1">Projets</label>
-            <div className="text-gray-400 text-xs">
-              {section.content && section.content.length > 0 ? (
-                <div className="space-y-2">
-                  {section.content.map((project, index) => (
-                    <div key={index} className="bg-gray-600 p-2 rounded">
-                      <div className="font-medium">{project.title}</div>
-                      <div className="text-gray-300">{project.description}</div>
-                      <div className="text-gray-400">Tech: {project.technologies}</div>
-                    </div>
-                  ))}
+            {/* Bouton d'ajout d'élément */}
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <button
+                onClick={() => toggleAddElement(section.id)}
+                className="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Ajouter un élément
+              </button>
+              
+              {showAddElement[section.id] && (
+                <div className="mt-3 space-y-2">
+                  <button
+                    onClick={() => addElementToSection(section.id, 'subtitle')}
+                    className="w-full px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+                  >
+                    + Sous-titre
+                  </button>
+                  <button
+                    onClick={() => addElementToSection(section.id, 'text')}
+                    className="w-full px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+                  >
+                    + Texte
+                  </button>
+                  <button
+                    onClick={() => addElementToSection(section.id, 'list')}
+                    className="w-full px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+                  >
+                    + Liste
+                  </button>
                 </div>
-              ) : (
-                <p>Aucun projet disponible</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {section.type === 'education' && (
-          <div className="mb-3">
-            <label className="block text-gray-300 text-xs mb-1">Formation</label>
-            <div className="text-gray-400 text-xs">
-              {section.content && section.content.length > 0 ? (
-                <div className="space-y-2">
-                  {section.content.map((edu, index) => (
-                    <div key={index} className="bg-gray-600 p-2 rounded">
-                      <div className="font-medium">{edu.title}</div>
-                      <div className="text-gray-300">{edu.school}</div>
-                      <div className="text-gray-400">{edu.date}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>Aucune formation disponible</p>
               )}
             </div>
           </div>
@@ -181,73 +328,98 @@ export default function CVSidebar({
       </div>
 
       {/* Informations personnelles */}
-      <div className="p-4 border-b border-gray-700">
-        <h3 className="text-white font-semibold mb-3">Informations personnelles</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-gray-300 text-xs mb-1">Nom complet</label>
-            <input
-              type="text"
-              value={cvData.personalInfo.name}
-              onChange={(e) => onUpdatePersonalInfo({ name: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-300 text-xs mb-1">Email</label>
-            <input
-              type="email"
-              value={cvData.personalInfo.email}
-              onChange={(e) => onUpdatePersonalInfo({ email: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-300 text-xs mb-1">Téléphone</label>
-            <input
-              type="tel"
-              value={cvData.personalInfo.phone}
-              onChange={(e) => onUpdatePersonalInfo({ phone: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-300 text-xs mb-1">Site web</label>
-            <input
-              type="url"
-              value={cvData.personalInfo.website}
-              onChange={(e) => onUpdatePersonalInfo({ website: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-300 text-xs mb-1">GitHub</label>
-            <input
-              type="url"
-              value={cvData.personalInfo.github}
-              onChange={(e) => onUpdatePersonalInfo({ github: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-gray-300 text-xs mb-1">LinkedIn</label>
-            <input
-              type="url"
-              value={cvData.personalInfo.linkedin}
-              onChange={(e) => onUpdatePersonalInfo({ linkedin: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+      <div className="bg-gray-800 rounded-lg border border-gray-700 mb-4">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div 
+            className="flex items-center cursor-pointer flex-1"
+            onClick={() => toggleSection('personalInfo')}
+          >
+            <div className="w-8 h-8 bg-gray-600 rounded-lg flex items-center justify-center mr-3">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h3 className="text-white font-semibold text-sm">Informations personnelles</h3>
+            <svg
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 ml-2 ${
+                expandedSections.personalInfo ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
+        
+        {expandedSections.personalInfo && (
+          <div className="p-4 space-y-3">
+            <div>
+              <label className="block text-gray-300 text-xs mb-1">Nom complet</label>
+              <input
+                type="text"
+                value={cvData.personalInfo.name}
+                onChange={(e) => onUpdatePersonalInfo({ name: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 text-xs mb-1">Email</label>
+              <input
+                type="email"
+                value={cvData.personalInfo.email}
+                onChange={(e) => onUpdatePersonalInfo({ email: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 text-xs mb-1">Téléphone</label>
+              <input
+                type="tel"
+                value={cvData.personalInfo.phone}
+                onChange={(e) => onUpdatePersonalInfo({ phone: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 text-xs mb-1">Site web</label>
+              <input
+                type="url"
+                value={cvData.personalInfo.website}
+                onChange={(e) => onUpdatePersonalInfo({ website: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 text-xs mb-1">GitHub</label>
+              <input
+                type="url"
+                value={cvData.personalInfo.github}
+                onChange={(e) => onUpdatePersonalInfo({ github: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 text-xs mb-1">LinkedIn</label>
+              <input
+                type="url"
+                value={cvData.personalInfo.linkedin}
+                onChange={(e) => onUpdatePersonalInfo({ linkedin: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sections du CV */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">Sections du CV</h3>
+          <h3 className="text-white font-semibold text-lg">Sections du CV</h3>
           <button
             onClick={() => setShowAddSection(!showAddSection)}
-            className="text-blue-400 hover:text-blue-300 text-sm"
+            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
           >
             + Ajouter
           </button>
@@ -255,7 +427,7 @@ export default function CVSidebar({
 
         {/* Formulaire d'ajout de section */}
         {showAddSection && (
-          <div className="bg-gray-700 rounded-lg p-4 mb-4">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-4 mb-4">
             <h4 className="text-white font-medium mb-3">Nouvelle section</h4>
             <div className="space-y-3">
               <div>
@@ -264,33 +436,20 @@ export default function CVSidebar({
                   type="text"
                   value={newSection.title}
                   onChange={(e) => setNewSection({ ...newSection, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Titre de la section"
                 />
-              </div>
-              <div>
-                <label className="block text-gray-300 text-xs mb-1">Type</label>
-                <select
-                  value={newSection.type}
-                  onChange={(e) => setNewSection({ ...newSection, type: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="text">Texte simple</option>
-                  <option value="skills">Compétences</option>
-                  <option value="projects">Projets</option>
-                  <option value="education">Formation</option>
-                </select>
               </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleAddSection}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
                 >
                   Ajouter
                 </button>
                 <button
                   onClick={() => setShowAddSection(false)}
-                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
                 >
                   Annuler
                 </button>
@@ -309,7 +468,7 @@ export default function CVSidebar({
                 
                 {/* Boutons de réorganisation */}
                 {!section.locked && (
-                  <div className="absolute top-2 right-2 flex space-x-1">
+                  <div className="absolute top-2 right-12 flex space-x-1">
                     <button
                       onClick={() => handleMoveSection(section.id, 'up')}
                       disabled={index === 0}
@@ -339,7 +498,7 @@ export default function CVSidebar({
           {/* Bouton supprimer tout */}
           <button
             onClick={onClearAllSections}
-            className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+            className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium"
           >
             Supprimer tous les blocs
           </button>

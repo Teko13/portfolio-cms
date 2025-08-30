@@ -19,15 +19,15 @@ export default function CVEditor() {
       {
         id: 'resume',
         title: 'RÉSUMÉ PROFESSIONNEL',
-        type: 'text',
-        content: '',
+        type: 'section',
+        content: [],
         order: 1,
         locked: false
       },
       {
         id: 'skills',
         title: 'COMPÉTENCES TECHNIQUES',
-        type: 'skills',
+        type: 'section',
         content: [],
         order: 2,
         locked: false
@@ -35,7 +35,7 @@ export default function CVEditor() {
       {
         id: 'projects',
         title: 'PROJETS RÉALISÉS',
-        type: 'projects',
+        type: 'section',
         content: [],
         order: 3,
         locked: false
@@ -43,7 +43,7 @@ export default function CVEditor() {
       {
         id: 'education',
         title: 'FORMATION',
-        type: 'education',
+        type: 'section',
         content: [],
         order: 4,
         locked: false
@@ -51,8 +51,8 @@ export default function CVEditor() {
       {
         id: 'hobbies',
         title: 'LOISIRS',
-        type: 'text',
-        content: '',
+        type: 'section',
+        content: [],
         order: 5,
         locked: false
       }
@@ -84,23 +84,44 @@ export default function CVEditor() {
             website: personalData.ma_photo_url || '',
             github: '',
             linkedin: ''
-          }
+          },
+          sections: prev.sections.map(section =>
+            section.id === 'resume' ? {
+              ...section,
+              content: [
+                {
+                  id: 'resume_text',
+                  type: 'text',
+                  content: personalData.description || 'Développeur passionné avec une expertise en technologies web modernes.'
+                }
+              ]
+            } : section
+          )
         }))
       }
 
       // Charger les compétences
       const competencesResponse = await api.get('/api/portfolio/competences')
       if (competencesResponse.success && competencesResponse.data) {
+        const skillsContent = competencesResponse.data.flatMap((comp, index) => [
+          {
+            id: `skill_title_${index}`,
+            type: 'subtitle',
+            content: comp.titre
+          },
+          {
+            id: `skill_desc_${index}`,
+            type: 'text',
+            content: comp.description
+          }
+        ])
+        
         setCvData(prev => ({
           ...prev,
           sections: prev.sections.map(section =>
             section.id === 'skills' ? {
               ...section,
-              content: competencesResponse.data.map(comp => ({
-                title: comp.titre,
-                description: comp.description,
-                level: comp.niveau
-              }))
+              content: skillsContent
             } : section
           )
         }))
@@ -109,17 +130,25 @@ export default function CVEditor() {
       // Charger les projets
       const projetsResponse = await api.get('/api/portfolio/projets')
       if (projetsResponse.success && projetsResponse.data) {
+        const projectsContent = projetsResponse.data.flatMap((projet, index) => [
+          {
+            id: `project_title_${index}`,
+            type: 'subtitle',
+            content: projet.titre
+          },
+          {
+            id: `project_desc_${index}`,
+            type: 'text',
+            content: projet.description
+          }
+        ])
+        
         setCvData(prev => ({
           ...prev,
           sections: prev.sections.map(section =>
             section.id === 'projects' ? {
               ...section,
-              content: projetsResponse.data.map(projet => ({
-                title: projet.titre,
-                description: projet.description,
-                technologies: projet.category || '',
-                url: projet.acces_url || ''
-              }))
+              content: projectsContent
             } : section
           )
         }))
@@ -128,17 +157,25 @@ export default function CVEditor() {
       // Charger le parcours
       const parcoursResponse = await api.get('/api/portfolio/parcours')
       if (parcoursResponse.success && parcoursResponse.data) {
+        const educationContent = parcoursResponse.data.flatMap((parcours, index) => [
+          {
+            id: `edu_title_${index}`,
+            type: 'subtitle',
+            content: parcours.titre
+          },
+          {
+            id: `edu_school_${index}`,
+            type: 'text',
+            content: `${parcours.ecole} - ${parcours.obtenu_en}`
+          }
+        ])
+        
         setCvData(prev => ({
           ...prev,
           sections: prev.sections.map(section =>
             section.id === 'education' ? {
               ...section,
-              content: parcoursResponse.data.map(parcours => ({
-                title: parcours.titre,
-                school: parcours.ecole,
-                date: parcours.obtenu_en,
-                pdfUrl: parcours.diplome_pdf_url
-              }))
+              content: educationContent
             } : section
           )
         }))
@@ -147,12 +184,18 @@ export default function CVEditor() {
       // Charger les loisirs
       const loisirsResponse = await api.get('/api/portfolio/loisirs')
       if (loisirsResponse.success && loisirsResponse.data) {
+        const hobbiesContent = loisirsResponse.data.map((loisir, index) => ({
+          id: `hobby_${index}`,
+          type: 'text',
+          content: loisir.description
+        }))
+        
         setCvData(prev => ({
           ...prev,
           sections: prev.sections.map(section =>
             section.id === 'hobbies' ? {
               ...section,
-              content: loisirsResponse.data.map(loisir => loisir.description).join(', ')
+              content: hobbiesContent
             } : section
           )
         }))
