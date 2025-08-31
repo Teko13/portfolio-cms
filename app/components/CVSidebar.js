@@ -124,7 +124,7 @@ export default function CVSidebar({
     }
   }
 
-  const renderSectionEditor = (section) => {
+  const renderSectionEditor = (section, index) => {
     const isExpanded = expandedSections[section.id] || false
     const isPersonalInfo = section.id === 'personalInfo'
 
@@ -156,15 +156,48 @@ export default function CVSidebar({
             </svg>
           </div>
           
-          {/* Bouton de suppression */}
+          {/* Boutons d'action */}
           {!section.locked && (
-            <button
-              onClick={() => onRemoveSection(section.id)}
-              className="w-6 h-6 bg-red-600 text-white rounded text-xs hover:bg-red-500 transition-colors"
-              title="Supprimer la section"
-            >
-              ×
-            </button>
+            <div className="flex items-center space-x-2">
+              {/* Boutons de déplacement */}
+              <div className="flex flex-col space-y-1">
+                <button
+                  onClick={() => handleMoveSection(section.id, 'up')}
+                  disabled={index === 0}
+                  className={`p-1 text-gray-400 hover:text-gray-300 hover:bg-gray-900/20 rounded transition-all duration-200 ${
+                    index === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title="Monter"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleMoveSection(section.id, 'down')}
+                  disabled={index === cvData.sections.length - 1}
+                  className={`p-1 text-gray-400 hover:text-gray-300 hover:bg-gray-900/20 rounded transition-all duration-200 ${
+                    index === cvData.sections.length - 1 ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title="Descendre"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Bouton de suppression */}
+              <button
+                onClick={() => onRemoveSection(section.id)}
+                className="p-1 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded transition-all duration-200"
+                title="Supprimer la section"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           )}
         </div>
 
@@ -274,7 +307,7 @@ export default function CVSidebar({
             <div className="mt-4 pt-4 border-t border-gray-700">
               <button
                 onClick={() => toggleAddElement(section.id)}
-                className="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors flex items-center justify-center"
+                className="w-full px-3 py-2 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors flex items-center justify-center"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -286,19 +319,19 @@ export default function CVSidebar({
                 <div className="mt-3 space-y-2">
                   <button
                     onClick={() => addElementToSection(section.id, 'subtitle')}
-                    className="w-full px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+                    className="w-full px-3 py-2 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors"
                   >
                     + Sous-titre
                   </button>
                   <button
                     onClick={() => addElementToSection(section.id, 'text')}
-                    className="w-full px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+                    className="w-full px-3 py-2 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors"
                   >
                     + Texte
                   </button>
                   <button
                     onClick={() => addElementToSection(section.id, 'list')}
-                    className="w-full px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-500 transition-colors"
+                    className="w-full px-3 py-2 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors"
                   >
                     + Liste
                   </button>
@@ -315,7 +348,18 @@ export default function CVSidebar({
     <div className="h-full flex flex-col">
       {/* En-tête */}
       <div className="p-4 border-b border-gray-700">
-        <h2 className="text-white text-lg font-semibold mb-2">Édition du CV</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-white text-lg font-semibold">Édition du CV</h2>
+          <button
+            onClick={onClearAllSections}
+            className="w-8 h-8 bg-red-600 text-white rounded hover:bg-red-700 transition-colors flex items-center justify-center"
+            title="Supprimer tous les blocs"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
         <p className="text-gray-400 text-sm">
           Modifiez le contenu et l'ordre des sections
         </p>
@@ -413,7 +457,7 @@ export default function CVSidebar({
           <h3 className="text-white font-semibold text-lg">Sections du CV</h3>
           <button
             onClick={() => setShowAddSection(!showAddSection)}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+            className="px-3 py-1 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors"
           >
             + Ajouter
           </button>
@@ -437,13 +481,13 @@ export default function CVSidebar({
               <div className="flex space-x-2">
                 <button
                   onClick={handleAddSection}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                  className="px-3 py-1 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors"
                 >
                   Ajouter
                 </button>
                 <button
                   onClick={() => setShowAddSection(false)}
-                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+                  className="px-3 py-1 bg-white text-black rounded text-sm hover:bg-gray-100 transition-colors"
                 >
                   Annuler
                 </button>
@@ -457,30 +501,8 @@ export default function CVSidebar({
           {cvData.sections
             .sort((a, b) => a.order - b.order)
             .map((section, index) => (
-              <div key={section.id} className="relative">
-                {renderSectionEditor(section)}
-                
-                {/* Boutons de réorganisation */}
-                {!section.locked && (
-                  <div className="absolute top-2 right-12 flex space-x-1">
-                    <button
-                      onClick={() => handleMoveSection(section.id, 'up')}
-                      disabled={index === 0}
-                      className="w-6 h-6 bg-gray-600 text-white rounded text-xs hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Déplacer vers le haut"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => handleMoveSection(section.id, 'down')}
-                      disabled={index === cvData.sections.length - 1}
-                      className="w-6 h-6 bg-gray-600 text-white rounded text-xs hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Déplacer vers le bas"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                )}
+              <div key={section.id}>
+                {renderSectionEditor(section, index)}
               </div>
             ))}
         </div>
@@ -489,14 +511,6 @@ export default function CVSidebar({
       {/* Actions globales */}
       <div className="p-4 border-t border-gray-700">
         <div className="space-y-4">
-          {/* Bouton supprimer tout */}
-          <button
-            onClick={onClearAllSections}
-            className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium"
-          >
-            Supprimer tous les blocs
-          </button>
-
           {/* Case à cocher pour sauvegarder */}
           <div className="flex items-center">
             <input
@@ -515,7 +529,7 @@ export default function CVSidebar({
           <button
             onClick={onGeneratePDF}
             disabled={saving}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-4 py-3 bg-white text-black rounded hover:bg-gray-100 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Génération...' : (saveAsCV ? 'Créer ou modifier mon CV' : 'Télécharger le CV')}
           </button>

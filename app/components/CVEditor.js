@@ -9,6 +9,8 @@ export default function CVEditor() {
   const [cvData, setCvData] = useState({
     personalInfo: {
       name: '',
+      title: '',
+      age: '',
       email: '',
       phone: '',
       website: '',
@@ -68,6 +70,21 @@ export default function CVEditor() {
     setIsDarkMode(newTheme)
   }
 
+  // Fonction pour calculer l'âge à partir de la date de naissance
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return ''
+    const today = new Date()
+    const birth = new Date(birthDate)
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--
+    }
+    
+    return age
+  }
+
   // Charger les données du portfolio au montage
   useEffect(() => {
     loadPortfolioData()
@@ -84,9 +101,11 @@ export default function CVEditor() {
           ...prev,
           personalInfo: {
             name: `${personalData.prenom || ''} ${personalData.nom || ''}`.trim(),
-            email: personalData.email || '',
-            phone: personalData.telephone || '',
-            website: personalData.ma_photo_url || '',
+            title: personalData.titre || '',
+            age: personalData.date_naissance ? `Âge: ${calculateAge(personalData.date_naissance)} ans` : '',
+            email: `Email: ${personalData.email || 'teko.fabrice@gmail.com'}`,
+            phone: `Téléphone: ${personalData.telephone || '+33 6 12 34 56 78'}`,
+            website: `Portfolio: ${personalData.ma_photo_url || 'https://teko-fabrice.vercel.app/'}`,
             github: '',
             linkedin: ''
           },
@@ -216,8 +235,8 @@ export default function CVEditor() {
           ...prev,
           personalInfo: {
             ...prev.personalInfo,
-            github: githubElement?.url || '',
-            linkedin: linkedinElement?.url || ''
+            github: githubElement?.url ? `GitHub: ${githubElement.url}` : '',
+            linkedin: linkedinElement?.url ? `LinkedIn: ${linkedinElement.url}` : ''
           }
         }))
       }
@@ -242,7 +261,10 @@ export default function CVEditor() {
   const updatePersonalInfo = (updates) => {
     setCvData(prev => ({
       ...prev,
-      personalInfo: { ...prev.personalInfo, ...updates }
+      personalInfo: {
+        ...prev.personalInfo,
+        ...updates
+      }
     }))
   }
 

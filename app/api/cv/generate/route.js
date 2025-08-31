@@ -241,14 +241,20 @@ function generateCVHTML(cvData, isDarkMode) {
         ${isFirstPage ? `
           <div style="text-align: center; margin-bottom: 8mm; padding-bottom: 4mm; border-bottom: 2px solid #ccc;">
             <h1 style="font-size: 24px; font-weight: bold; color: black; margin-bottom: 2mm; text-transform: uppercase; letter-spacing: 0.1em;">
-              ${cvData.personalInfo.name || 'FABRICE FOLLY'}
+              ${cvData.personalInfo?.name || 'FABRICE FOLLY'}
             </h1>
+            ${cvData.personalInfo?.title ? `
+              <h2 style="font-size: 16px; font-weight: normal; color: #666; margin-bottom: 2mm;">
+                ${cvData.personalInfo.title}
+              </h2>
+            ` : ''}
             <div style="font-size: 12px; color: #666; line-height: 1.4;">
-              <div>${cvData.personalInfo.email || 'teko.fabrice@gmail.com'}</div>
-              <div>${cvData.personalInfo.phone || '+33 6 12 34 56 78'}</div>
-              <div>${cvData.personalInfo.website || 'https://teko-fabrice.vercel.app/'}</div>
-              ${cvData.personalInfo.github ? `<div>${cvData.personalInfo.github}</div>` : ''}
-              ${cvData.personalInfo.linkedin ? `<div>${cvData.personalInfo.linkedin}</div>` : ''}
+              ${cvData.personalInfo?.age ? `<div>${cvData.personalInfo.age}</div>` : ''}
+              ${cvData.personalInfo?.email ? `<div>${cvData.personalInfo.email}</div>` : ''}
+              ${cvData.personalInfo?.phone ? `<div>${cvData.personalInfo.phone}</div>` : ''}
+              ${cvData.personalInfo?.website ? `<div>${cvData.personalInfo.website}</div>` : ''}
+              ${cvData.personalInfo?.github ? `<div>${cvData.personalInfo.github}</div>` : ''}
+              ${cvData.personalInfo?.linkedin ? `<div>${cvData.personalInfo.linkedin}</div>` : ''}
             </div>
           </div>
         ` : ''}

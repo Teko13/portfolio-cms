@@ -107,16 +107,24 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
             <h1 className={`text-3xl font-bold mb-2 uppercase tracking-wider ${
               isDarkMode ? 'text-white' : 'text-black'
             }`}>
-              {cvData.personalInfo.name || 'FABRICE FOLLY'}
+              {cvData.personalInfo?.name || 'FABRICE FOLLY'}
             </h1>
+            {cvData.personalInfo?.title && (
+              <h2 className={`text-lg font-medium mb-3 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                {cvData.personalInfo.title}
+              </h2>
+            )}
             <div className={`text-sm space-y-1 ${
               isDarkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>
-              <div>{cvData.personalInfo.email || 'teko.fabrice@gmail.com'}</div>
-              <div>{cvData.personalInfo.phone || '+33 6 12 34 56 78'}</div>
-              <div>{cvData.personalInfo.website || 'https://teko-fabrice.vercel.app/'}</div>
-              {cvData.personalInfo.github && <div>{cvData.personalInfo.github}</div>}
-              {cvData.personalInfo.linkedin && <div>{cvData.personalInfo.linkedin}</div>}
+              {cvData.personalInfo?.age && <div>{cvData.personalInfo.age}</div>}
+              {cvData.personalInfo?.email && <div>{cvData.personalInfo.email}</div>}
+              {cvData.personalInfo?.phone && <div>{cvData.personalInfo.phone}</div>}
+              {cvData.personalInfo?.website && <div>{cvData.personalInfo.website}</div>}
+              {cvData.personalInfo?.github && <div>{cvData.personalInfo.github}</div>}
+              {cvData.personalInfo?.linkedin && <div>{cvData.personalInfo.linkedin}</div>}
             </div>
           </div>
         )}
@@ -203,7 +211,7 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
   const pages = splitContentIntoPages()
 
   return (
-    <div className="flex h-screen bg-gray-900">
+    <div className="flex h-screen bg-black">
       {/* Colonne gauche - Rendu CV (2/3 de la largeur) */}
       <div className="w-2/3 p-8 overflow-y-auto">
         <div className="mb-6">
@@ -245,7 +253,7 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
       </div>
 
       {/* Colonne droite - CV Edition (1/3 de la largeur) */}
-      <div className="w-1/3 bg-gray-800 border-l border-gray-700">
+      <div className="w-1/3 border-l border-gray-700">
         <div className="text-white text-lg font-semibold p-6 border-b border-gray-700">
           CV edition
         </div>
