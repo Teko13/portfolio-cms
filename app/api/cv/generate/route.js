@@ -31,10 +31,10 @@ async function deleteFileFromStorage(supabase, fileName) {
 // POST - Générer le CV en PDF
 export async function POST(request) {
   try {
-    const { cvData, saveAsCV } = await request.json()
+    const { cvData, saveAsCV, isDarkMode } = await request.json()
 
     // Créer le HTML du CV
-    const htmlContent = generateCVHTML(cvData)
+    const htmlContent = generateCVHTML(cvData, isDarkMode)
 
     // Générer le PDF avec Puppeteer
     const pdfBuffer = await generatePDF(htmlContent)
@@ -126,7 +126,7 @@ export async function POST(request) {
 }
 
 // Fonction pour générer le HTML du CV
-function generateCVHTML(cvData) {
+function generateCVHTML(cvData, isDarkMode) {
   const formatDate = (dateString) => {
     if (!dateString) return ''
     const date = new Date(dateString)
@@ -320,8 +320,10 @@ function generateCVHTML(cvData) {
           background: #f5f5f5;
         }
         .page {
-          background: white;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          ${isDarkMode 
+            ? 'background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e5e7eb;' 
+            : 'background: #fafafa; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 2px solid #d1d5db;'
+          }
         }
         .section {
           page-break-inside: avoid;
@@ -343,6 +345,7 @@ function generateCVHTML(cvData) {
           .page {
             box-shadow: none;
             margin: 0;
+            border: none;
           }
         }
       </style>

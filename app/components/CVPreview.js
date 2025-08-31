@@ -2,28 +2,48 @@
 
 import React from 'react'
 
-const CVPreview = ({ cvData, sidebar }) => {
+const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
+  const toggleTheme = () => {
+    onThemeChange(!isDarkMode)
+  }
+
   const renderContent = (section) => {
     if (typeof section.content === 'string') {
-      return <p className="text-sm text-gray-800 leading-relaxed mb-3">{section.content || 'Contenu à ajouter...'}</p>
+      return (
+        <p className={`text-sm leading-relaxed mb-3 ${
+          isDarkMode ? 'text-gray-200' : 'text-gray-800'
+        }`}>
+          {section.content || 'Contenu à ajouter...'}
+        </p>
+      )
     }
     
     if (!section.content || !Array.isArray(section.content) || section.content.length === 0) {
-      return <p className="text-sm text-gray-600 mb-3">Aucun contenu ajouté</p>
+      return (
+        <p className={`text-sm mb-3 ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+        }`}>
+          Aucun contenu ajouté
+        </p>
+      )
     }
 
     return section.content.map((element, index) => {
       switch (element.type) {
         case 'subtitle':
           return (
-            <h4 key={element.id || index} className="font-semibold text-sm text-black mb-2 mt-4 first:mt-0">
+            <h4 key={element.id || index} className={`font-semibold text-sm mb-2 mt-4 first:mt-0 ${
+              isDarkMode ? 'text-white' : 'text-black'
+            }`}>
               {element.content}
             </h4>
           )
         
         case 'text':
           return (
-            <p key={element.id || index} className="text-sm text-gray-800 leading-relaxed mb-3">
+            <p key={element.id || index} className={`text-sm leading-relaxed mb-3 ${
+              isDarkMode ? 'text-gray-200' : 'text-gray-800'
+            }`}>
               {element.content}
             </p>
           )
@@ -31,7 +51,9 @@ const CVPreview = ({ cvData, sidebar }) => {
         case 'list':
           if (element.content && Array.isArray(element.content) && element.content.length > 0) {
             return (
-              <ul key={element.id || index} className="list-disc list-inside text-sm text-gray-800 mb-3 ml-4">
+              <ul key={element.id || index} className={`list-disc list-inside text-sm mb-3 ml-4 ${
+                isDarkMode ? 'text-gray-200' : 'text-gray-800'
+              }`}>
                 {element.content.map((item, itemIndex) => (
                   <li key={itemIndex} className="mb-1">{item}</li>
                 ))}
@@ -39,8 +61,10 @@ const CVPreview = ({ cvData, sidebar }) => {
             )
           } else {
             return (
-              <ul key={element.id || index} className="list-disc list-inside text-sm text-gray-800 mb-3 ml-4">
-                <li className="text-gray-600">Aucun élément dans la liste</li>
+              <ul key={element.id || index} className={`list-disc list-inside text-sm mb-3 ml-4 ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                <li>Aucun élément dans la liste</li>
               </ul>
             )
           }
@@ -54,18 +78,23 @@ const CVPreview = ({ cvData, sidebar }) => {
   const renderPage = (sections, pageNumber, isLastPage = false) => (
     <div 
       key={pageNumber}
-      className="bg-white shadow-xl mx-auto mb-8 relative"
+      className={`mx-auto mb-8 relative transition-all duration-300 ${
+        isDarkMode 
+          ? 'bg-black shadow-xl border border-gray-700' 
+          : 'bg-white shadow-lg border-2 border-gray-300'
+      }`}
       style={{
         width: '210mm',
         minHeight: '297mm',
         padding: '20mm',
         boxSizing: 'border-box',
-        borderRadius: '2px',
-        border: '1px solid #e5e7eb'
+        borderRadius: '2px'
       }}
     >
       {/* Numéro de page en haut à droite */}
-      <div className="absolute top-4 right-4 text-xs text-gray-500 font-medium">
+      <div className={`absolute top-4 right-4 text-xs font-medium ${
+        isDarkMode ? 'text-gray-400' : 'text-gray-500'
+      }`}>
         Page {pageNumber}
       </div>
       
@@ -73,11 +102,17 @@ const CVPreview = ({ cvData, sidebar }) => {
       <div className="h-full">
         {/* En-tête avec informations personnelles (seulement sur la première page) */}
         {pageNumber === 1 && (
-          <div className="text-center mb-8 pb-4 border-b-2 border-gray-300">
-            <h1 className="text-3xl font-bold text-black mb-2 uppercase tracking-wider">
+          <div className={`text-center mb-8 pb-4 border-b-2 ${
+            isDarkMode ? 'border-gray-600' : 'border-gray-300'
+          }`}>
+            <h1 className={`text-3xl font-bold mb-2 uppercase tracking-wider ${
+              isDarkMode ? 'text-white' : 'text-black'
+            }`}>
               {cvData.personalInfo.name || 'FABRICE FOLLY'}
             </h1>
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className={`text-sm space-y-1 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}>
               <div>{cvData.personalInfo.email || 'teko.fabrice@gmail.com'}</div>
               <div>{cvData.personalInfo.phone || '+33 6 12 34 56 78'}</div>
               <div>{cvData.personalInfo.website || 'https://teko-fabrice.vercel.app/'}</div>
@@ -91,7 +126,11 @@ const CVPreview = ({ cvData, sidebar }) => {
         <div className="space-y-6">
           {sections.map((section, index) => (
             <div key={section.id} className="section">
-              <h2 className="text-lg font-bold text-black mb-3 uppercase tracking-wide border-b border-gray-300 pb-1">
+              <h2 className={`text-lg font-bold mb-3 uppercase tracking-wide border-b pb-1 ${
+                isDarkMode 
+                  ? 'text-white border-gray-600' 
+                  : 'text-black border-gray-300'
+              }`}>
                 {section.title}
               </h2>
               <div className="section-content">
@@ -103,7 +142,11 @@ const CVPreview = ({ cvData, sidebar }) => {
       </div>
 
       {/* Pied de page */}
-      <div className="absolute bottom-4 left-4 right-4 text-center text-xs text-gray-500 border-t border-gray-200 pt-2">
+      <div className={`absolute bottom-4 left-4 right-4 text-center text-xs border-t pt-2 ${
+        isDarkMode 
+          ? 'text-gray-400 border-gray-600' 
+          : 'text-gray-500 border-gray-200'
+      }`}>
         CV généré le {new Date().toLocaleDateString('fr-FR')}
       </div>
     </div>
@@ -176,7 +219,35 @@ const CVPreview = ({ cvData, sidebar }) => {
     <div className="flex h-screen bg-gray-900">
       {/* Colonne gauche - Rendu CV (2/3 de la largeur) */}
       <div className="w-2/3 p-8 overflow-y-auto">
-        <div className="text-white text-lg font-semibold mb-6">Rendu cv</div>
+        <div className="mb-6">
+          <div className="text-white text-lg font-semibold mb-3">
+            Rendu cv {isDarkMode ? '🌙' : '☀️'}
+          </div>
+          
+          {/* Switch de basculement thème */}
+          <div className="flex items-center space-x-3">
+            <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-400'}`}>Mode sombre</span>
+            <button
+              onClick={toggleTheme}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isDarkMode 
+                  ? 'bg-blue-600' 
+                  : 'bg-gray-400'
+              }`}
+              role="switch"
+              aria-checked={isDarkMode}
+              aria-label={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${
+                  isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm ${!isDarkMode ? 'text-white' : 'text-gray-400'}`}>Mode clair</span>
+          </div>
+        </div>
+        
         <div className="flex justify-center">
           <div className="space-y-0">
             {pages.map((pageSections, index) => 

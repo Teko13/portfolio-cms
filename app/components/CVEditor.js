@@ -62,6 +62,11 @@ export default function CVEditor() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [saveAsCV, setSaveAsCV] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(true)
+
+  const handleThemeChange = (newTheme) => {
+    setIsDarkMode(newTheme)
+  }
 
   // Charger les données du portfolio au montage
   useEffect(() => {
@@ -283,7 +288,8 @@ export default function CVEditor() {
     try {
       const response = await api.post('/api/cv/generate', {
         cvData,
-        saveAsCV
+        saveAsCV,
+        isDarkMode
       })
 
       if (response.success) {
@@ -324,6 +330,8 @@ export default function CVEditor() {
     <div className="h-screen bg-gray-900">
       <CVPreview 
         cvData={cvData} 
+        isDarkMode={isDarkMode}
+        onThemeChange={handleThemeChange}
         sidebar={
           <CVSidebar
             cvData={cvData}
