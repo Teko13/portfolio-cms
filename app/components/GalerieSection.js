@@ -334,11 +334,11 @@ export default function GalerieSection() {
                         <button
                           onClick={addPhotoToGallery}
                           disabled={saving}
-                          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 bg-white hover:bg-gray-100 text-black py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {saving ? (
                             <div className="flex items-center justify-center">
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
                               Ajout en cours...
                             </div>
                           ) : (
@@ -370,6 +370,17 @@ export default function GalerieSection() {
                       {message}
                     </div>
                   )}
+
+                  {/* Bouton Fermer */}
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsExpanded(false)}
+                      className="px-6 py-3 text-gray-300 bg-transparent border border-gray-600 rounded-lg hover:bg-gray-800 transition-all duration-200"
+                    >
+                      Fermer
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

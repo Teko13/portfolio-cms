@@ -233,11 +233,11 @@ export default function LoisirsSection() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      className="flex-1 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                     >
                       {saving ? (
                         <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black mr-2"></div>
                           Sauvegarde...
                         </div>
                       ) : (
@@ -265,6 +265,17 @@ export default function LoisirsSection() {
                     {message}
                   </div>
                 )}
+
+                {/* Bouton Fermer */}
+                <div className="flex justify-end pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(false)}
+                    className="px-6 py-3 text-gray-300 bg-transparent border border-gray-600 rounded-lg hover:bg-gray-800 transition-all duration-200"
+                  >
+                    Fermer
+                  </button>
+                </div>
               </div>
             </div>
           )}
