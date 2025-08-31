@@ -321,31 +321,26 @@ export default function CVEditor() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-900">
-      {/* Rendu visuel du CV (gauche) */}
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto">
-          <CVPreview cvData={cvData} />
-        </div>
-      </div>
-
-      {/* Barre latérale d'édition (droite) */}
-      <div className="w-96 bg-gray-800 border-l border-gray-700 overflow-y-auto">
-        <CVSidebar
-          cvData={cvData}
-          onUpdateSection={updateSection}
-          onUpdatePersonalInfo={updatePersonalInfo}
-          onAddSection={addSection}
-          onRemoveSection={removeSection}
-          onReorderSections={reorderSections}
-          onClearAllSections={clearAllSections}
-          onGeneratePDF={generatePDF}
-          saveAsCV={saveAsCV}
-          onSaveAsCVChange={setSaveAsCV}
-          saving={saving}
-          message={message}
-        />
-      </div>
+    <div className="h-screen bg-gray-900">
+      <CVPreview 
+        cvData={cvData} 
+        sidebar={
+          <CVSidebar
+            cvData={cvData}
+            onUpdateSection={updateSection}
+            onUpdatePersonalInfo={updatePersonalInfo}
+            onAddSection={addSection}
+            onRemoveSection={removeSection}
+            onReorderSections={reorderSections}
+            onClearAllSections={clearAllSections}
+            onGeneratePDF={generatePDF}
+            saveAsCV={saveAsCV}
+            onSaveAsCVChange={setSaveAsCV}
+            saving={saving}
+            message={message}
+          />
+        }
+      />
     </div>
   )
 }

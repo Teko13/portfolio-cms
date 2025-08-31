@@ -73,6 +73,7 @@ Content-Type: application/json
 - **Gestion d'erreurs** : Logs détaillés pour le débogage
 
 **Réponse pour CV temporaire :**
+
 ```json
 {
   "success": true,
@@ -82,6 +83,7 @@ Content-Type: application/json
 ```
 
 **Réponse pour CV sauvegardé :**
+
 ```json
 {
   "success": true,
@@ -156,12 +158,14 @@ curl -X POST http://localhost:3000/api/cv/generate \
 Les opérations de suppression d'images et de CV sont loggées dans la console :
 
 ### **Images**
+
 ```
 Suppression de l'image: projet_1755993720202_53eidxvfkcf.jpeg
 Image supprimée avec succès: projet_1755993720202_53eidxvfkcf.jpeg
 ```
 
 ### **CV**
+
 ```
 Suppression de l'ancien CV: cv_1755993720202.pdf
 Fichier supprimé avec succès: cv_1755993720202.pdf
