@@ -43,8 +43,7 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
           return (
             <p key={element.id || index} className={`text-sm leading-relaxed mb-3 ${
               isDarkMode ? 'text-gray-200' : 'text-gray-800'
-            }`}>
-              {element.content}
+            }`} dangerouslySetInnerHTML={{ __html: element.content.replace(/\n/g, '<br>') }}>
             </p>
           )
         
@@ -157,22 +156,29 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
     const sections = cvData.sections.sort((a, b) => a.order - b.order)
     const pages = []
     let currentPage = []
-    let currentHeight = 0
-    const maxPageHeight = 257 // 297mm - 40mm (marges) = 257mm
-
-    sections.forEach(section => {
-      // Estimation de la hauteur de la section (approximative)
-      const sectionHeight = estimateSectionHeight(section)
+    
+    // Approche simple : mettre plusieurs sections par page
+    // On va essayer de mettre 2-3 sections par page selon leur taille
+    sections.forEach((section, index) => {
+      // Si c'est la première section ou si on a déjà 2 sections sur la page courante
+      // et que la section actuelle semble "lourde" (compétences), commencer une nouvelle page
+      const isHeavySection = section.title.toLowerCase().includes('compétences') || 
+                            section.title.toLowerCase().includes('projets')
       
-      if (currentHeight + sectionHeight > maxPageHeight && currentPage.length > 0) {
-        // Créer une nouvelle page
+      if (index === 0) {
+        // Première section : toujours sur la première page
+        currentPage.push(section)
+      } else if (currentPage.length >= 2 && isHeavySection) {
+        // Section lourde après 2 sections : nouvelle page
         pages.push([...currentPage])
         currentPage = [section]
-        currentHeight = sectionHeight
+      } else if (currentPage.length >= 3) {
+        // Après 3 sections : nouvelle page
+        pages.push([...currentPage])
+        currentPage = [section]
       } else {
-        // Ajouter à la page courante
+        // Sinon : continuer sur la page courante
         currentPage.push(section)
-        currentHeight += sectionHeight
       }
     })
 
@@ -184,33 +190,14 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
     return pages
   }
 
-  // Fonction pour estimer la hauteur d'une section
-  const estimateSectionHeight = (section) => {
-    let height = 40 // Hauteur du titre de section
-    
-    if (typeof section.content === 'string') {
-      height += Math.ceil(section.content.length / 80) * 20 // Estimation basée sur la longueur du texte
-    } else if (Array.isArray(section.content)) {
-      section.content.forEach(element => {
-        switch (element.type) {
-          case 'subtitle':
-            height += 25
-            break
-          case 'text':
-            height += Math.ceil(element.content.length / 80) * 20
-            break
-          case 'list':
-            if (Array.isArray(element.content)) {
-              height += element.content.length * 20
-            } else {
-              height += 20
-            }
-            break
-        }
-      })
-    }
-    
-    return height
+  // Fonction pour formater une date
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleDateString('fr-FR', { 
+      year: 'numeric', 
+      month: 'long' 
+    })
   }
 
   const pages = splitContentIntoPages()

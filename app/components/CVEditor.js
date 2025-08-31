@@ -97,7 +97,7 @@ export default function CVEditor() {
                 {
                   id: 'resume_text',
                   type: 'text',
-                  content: personalData.description || 'Développeur passionné avec une expertise en technologies web modernes.'
+                  content: personalData.resume || 'Développeur passionné avec une expertise en technologies web modernes.'
                 }
               ]
             } : section

@@ -154,7 +154,7 @@ function generateCVHTML(cvData, isDarkMode) {
             return `<h4 class="font-semibold text-sm text-black mb-2 mt-4 first:mt-0">${element.content}</h4>`
           
           case 'text':
-            return `<p class="text-sm text-gray-800 leading-relaxed mb-3">${element.content}</p>`
+            return `<p class="text-sm text-gray-800 leading-relaxed mb-3">${element.content.replace(/\n/g, '<br>')}</p>`
           
           case 'list':
             if (element.content && Array.isArray(element.content) && element.content.length > 0) {
@@ -173,90 +173,34 @@ function generateCVHTML(cvData, isDarkMode) {
     return content
   }
 
-  const renderPage = (sections, pageNumber, isLastPage = false) => {
-    const pageBreakAfter = isLastPage ? 'auto' : 'always'
-    
-    return `
-      <div class="page" style="
-        width: 210mm;
-        min-height: 297mm;
-        padding: 20mm;
-        box-sizing: border-box;
-        page-break-after: ${pageBreakAfter};
-        page-break-inside: avoid;
-        position: relative;
-        background: white;
-        margin-bottom: 10mm;
-      ">
-        <!-- En-tête de page -->
-        ${pageNumber > 1 ? `
-          <div style="position: absolute; top: 4mm; right: 4mm; font-size: 10px; color: #666;">
-            Page ${pageNumber}
-          </div>
-        ` : ''}
-        
-        <!-- Contenu de la page -->
-        <div style="height: 100%;">
-          <!-- En-tête avec informations personnelles (seulement sur la première page) -->
-          ${pageNumber === 1 ? `
-            <div style="text-align: center; margin-bottom: 8mm; padding-bottom: 4mm; border-bottom: 2px solid #ccc;">
-              <h1 style="font-size: 24px; font-weight: bold; color: black; margin-bottom: 2mm; text-transform: uppercase; letter-spacing: 0.1em;">
-                ${cvData.personalInfo.name || 'FABRICE FOLLY'}
-              </h1>
-              <div style="font-size: 12px; color: #666; line-height: 1.4;">
-                <div>${cvData.personalInfo.email || 'teko.fabrice@gmail.com'}</div>
-                <div>${cvData.personalInfo.phone || '+33 6 12 34 56 78'}</div>
-                <div>${cvData.personalInfo.website || 'https://teko-fabrice.vercel.app/'}</div>
-                ${cvData.personalInfo.github ? `<div>${cvData.personalInfo.github}</div>` : ''}
-                ${cvData.personalInfo.linkedin ? `<div>${cvData.personalInfo.linkedin}</div>` : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Sections du CV -->
-          <div style="margin-bottom: 6mm;">
-            ${sections.map(section => `
-              <div class="section" style="margin-bottom: 6mm;">
-                <h2 style="font-size: 16px; font-weight: bold; color: black; margin-bottom: 3mm; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #ccc; padding-bottom: 1mm;">
-                  ${section.title}
-                </h2>
-                <div class="section-content">
-                  ${renderContent(section)}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- Pied de page -->
-        <div style="position: absolute; bottom: 4mm; left: 4mm; right: 4mm; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #eee; padding-top: 2mm;">
-          CV généré le ${new Date().toLocaleDateString('fr-FR')}
-        </div>
-      </div>
-    `
-  }
-
   // Fonction pour diviser le contenu en pages
   const splitContentIntoPages = () => {
     const sections = cvData.sections.sort((a, b) => a.order - b.order)
     const pages = []
     let currentPage = []
-    let currentHeight = 0
-    const maxPageHeight = 257 // 297mm - 40mm (marges) = 257mm
-
-    sections.forEach(section => {
-      // Estimation de la hauteur de la section (approximative)
-      const sectionHeight = estimateSectionHeight(section)
+    
+    // Approche simple : mettre plusieurs sections par page
+    // On va essayer de mettre 2-3 sections par page selon leur taille
+    sections.forEach((section, index) => {
+      // Si c'est la première section ou si on a déjà 2 sections sur la page courante
+      // et que la section actuelle semble "lourde" (compétences), commencer une nouvelle page
+      const isHeavySection = section.title.toLowerCase().includes('compétences') || 
+                            section.title.toLowerCase().includes('projets')
       
-      if (currentHeight + sectionHeight > maxPageHeight && currentPage.length > 0) {
-        // Créer une nouvelle page
+      if (index === 0) {
+        // Première section : toujours sur la première page
+        currentPage.push(section)
+      } else if (currentPage.length >= 2 && isHeavySection) {
+        // Section lourde après 2 sections : nouvelle page
         pages.push([...currentPage])
         currentPage = [section]
-        currentHeight = sectionHeight
+      } else if (currentPage.length >= 3) {
+        // Après 3 sections : nouvelle page
+        pages.push([...currentPage])
+        currentPage = [section]
       } else {
-        // Ajouter à la page courante
+        // Sinon : continuer sur la page courante
         currentPage.push(section)
-        currentHeight += sectionHeight
       }
     })
 
@@ -268,36 +212,68 @@ function generateCVHTML(cvData, isDarkMode) {
     return pages
   }
 
-  // Fonction pour estimer la hauteur d'une section
-  const estimateSectionHeight = (section) => {
-    let height = 40 // Hauteur du titre de section
-    
-    if (typeof section.content === 'string') {
-      height += Math.ceil(section.content.length / 80) * 20 // Estimation basée sur la longueur du texte
-    } else if (Array.isArray(section.content)) {
-      section.content.forEach(element => {
-        switch (element.type) {
-          case 'subtitle':
-            height += 25
-            break
-          case 'text':
-            height += Math.ceil(element.content.length / 80) * 20
-            break
-          case 'list':
-            if (Array.isArray(element.content)) {
-              height += element.content.length * 20
-            } else {
-              height += 20
-            }
-            break
-        }
-      })
-    }
-    
-    return height
-  }
-
   const pages = splitContentIntoPages()
+
+  // Générer le HTML avec des pages séparées explicitement
+  const pagesHTML = pages.map((pageSections, pageIndex) => {
+    const pageNumber = pageIndex + 1
+    const isFirstPage = pageIndex === 0
+    
+    return `
+      <div class="page" style="
+        width: 210mm;
+        height: 297mm;
+        padding: 20mm;
+        box-sizing: border-box;
+        position: relative;
+        background: white;
+        margin: 0 auto 10mm auto;
+        page-break-after: always;
+        page-break-inside: avoid;
+        overflow: hidden;
+      ">
+        <!-- Numéro de page -->
+        <div style="position: absolute; top: 4mm; right: 4mm; font-size: 10px; color: #666;">
+          Page ${pageNumber}
+        </div>
+        
+        <!-- En-tête avec informations personnelles (seulement sur la première page) -->
+        ${isFirstPage ? `
+          <div style="text-align: center; margin-bottom: 8mm; padding-bottom: 4mm; border-bottom: 2px solid #ccc;">
+            <h1 style="font-size: 24px; font-weight: bold; color: black; margin-bottom: 2mm; text-transform: uppercase; letter-spacing: 0.1em;">
+              ${cvData.personalInfo.name || 'FABRICE FOLLY'}
+            </h1>
+            <div style="font-size: 12px; color: #666; line-height: 1.4;">
+              <div>${cvData.personalInfo.email || 'teko.fabrice@gmail.com'}</div>
+              <div>${cvData.personalInfo.phone || '+33 6 12 34 56 78'}</div>
+              <div>${cvData.personalInfo.website || 'https://teko-fabrice.vercel.app/'}</div>
+              ${cvData.personalInfo.github ? `<div>${cvData.personalInfo.github}</div>` : ''}
+              ${cvData.personalInfo.linkedin ? `<div>${cvData.personalInfo.linkedin}</div>` : ''}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Sections du CV pour cette page -->
+        <div style="margin-bottom: 6mm;">
+          ${pageSections.map(section => `
+            <div class="section" style="margin-bottom: 6mm;">
+              <h2 style="font-size: 16px; font-weight: bold; color: black; margin-bottom: 3mm; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #ccc; padding-bottom: 1mm;">
+                ${section.title}
+              </h2>
+              <div class="section-content">
+                ${renderContent(section)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Pied de page - Supprimé pour le PDF -->
+        <!-- <div style="position: absolute; bottom: 4mm; left: 4mm; right: 4mm; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #eee; padding-top: 2mm;">
+          CV généré le ${new Date().toLocaleDateString('fr-FR')}
+        </div> -->
+      </div>
+    `
+  }).join('')
 
   return `
     <!DOCTYPE html>
@@ -320,10 +296,9 @@ function generateCVHTML(cvData, isDarkMode) {
           background: #f5f5f5;
         }
         .page {
-          ${isDarkMode 
-            ? 'background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #e5e7eb;' 
-            : 'background: #fafafa; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 2px solid #d1d5db;'
-          }
+          background: white;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          border: 1px solid #e5e7eb;
         }
         .section {
           page-break-inside: avoid;
@@ -346,14 +321,16 @@ function generateCVHTML(cvData, isDarkMode) {
             box-shadow: none;
             margin: 0;
             border: none;
+            page-break-after: always;
+          }
+          .page:last-child {
+            page-break-after: auto;
           }
         }
       </style>
     </head>
     <body>
-      ${pages.map((pageSections, index) => 
-        renderPage(pageSections, index + 1, index === pages.length - 1)
-      ).join('')}
+      ${pagesHTML}
     </body>
     </html>
   `

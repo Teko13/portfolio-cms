@@ -21,14 +21,8 @@ export default function CVSidebar({
     title: '',
     type: 'text'
   })
-  const [expandedSections, setExpandedSections] = useState({
-    personalInfo: true,
-    resume: true,
-    skills: true,
-    projects: true,
-    education: true,
-    hobbies: true
-  })
+  // État pour gérer les sections pliées/dépliées
+  const [expandedSections, setExpandedSections] = useState({})
   const [showAddElement, setShowAddElement] = useState({})
 
   const handleMoveSection = (sectionId, direction) => {
