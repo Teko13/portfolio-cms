@@ -101,36 +101,36 @@ export async function POST(request) {
       // Fermer le navigateur
       await browser.close()
 
-      // Générer un nom de fichier unique
-      const timestamp = Date.now()
-      const fileName = `cv_${timestamp}.pdf`
-      
-      // Créer le client Supabase
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      )
-      
-      // Upload du PDF vers Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('docs')
-        .upload(fileName, pdfBuffer, {
-          contentType: 'application/pdf',
-          cacheControl: '3600'
-        })
-
-      if (uploadError) {
-        console.error('Erreur lors de l\'upload:', uploadError)
-        return NextResponse.json({ error: 'Erreur lors de l\'upload du PDF' }, { status: 500 })
-      }
-
-      // Obtenir l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('docs')
-        .getPublicUrl(fileName)
-
-      // Si on doit sauvegarder dans le profil, mettre à jour la base de données
+      // Si on doit sauvegarder dans le profil, uploader vers Supabase
       if (saveAsCV) {
+        // Générer un nom de fichier unique
+        const timestamp = Date.now()
+        const fileName = `cv_${timestamp}.pdf`
+        
+        // Créer le client Supabase
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        )
+        
+        // Upload du PDF vers Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('docs')
+          .upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
+            cacheControl: '3600'
+          })
+
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload:', uploadError)
+          return NextResponse.json({ error: 'Erreur lors de l\'upload du PDF' }, { status: 500 })
+        }
+
+        // Obtenir l'URL publique
+        const { data: { publicUrl } } = supabase.storage
+          .from('docs')
+          .getPublicUrl(fileName)
+
         // Vérifier s'il y a déjà un CV sauvegardé
         const { data: existingProfile } = await supabase
           .from('moi')
