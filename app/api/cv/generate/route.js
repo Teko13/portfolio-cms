@@ -1,127 +1,192 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
-import puppeteer from 'puppeteer'
+import { createClient } from '@supabase/supabase-js'
 
-// Fonction pour extraire le nom du fichier depuis une URL Supabase
-function extractFileNameFromUrl(url) {
+// Import conditionnel selon l'environnement
+let puppeteer, chromium
+
+if (process.env.NODE_ENV === 'production') {
+  // En production (Vercel) : utiliser Puppeteer-core + Chromium
+  puppeteer = require('puppeteer-core')
+  chromium = require('@sparticuz/chromium')
+} else {
+  // En développement (local) : utiliser Puppeteer normal
+  puppeteer = require('puppeteer')
+}
+
+// Fonction pour extraire le nom du fichier depuis une URL
+const extractFileNameFromUrl = (url) => {
   if (!url) return null
-  const parts = url.split('/')
-  return parts[parts.length - 1]
+  const urlParts = url.split('/')
+  return urlParts[urlParts.length - 1]
 }
 
 // Fonction pour supprimer un fichier du storage
-async function deleteFileFromStorage(supabase, fileName) {
-  if (!fileName) return
+const deleteFileFromStorage = async (fileName) => {
+  if (!fileName) return false
   
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    )
+    
     const { error } = await supabase.storage
       .from('docs')
       .remove([fileName])
     
     if (error) {
-      console.error('Erreur lors de la suppression du fichier:', error)
-    } else {
-      console.log(`Fichier supprimé avec succès: ${fileName}`)
+      console.error('Erreur lors de la suppression:', error)
+      return false
     }
+    
+    return true
   } catch (error) {
-    console.error('Erreur lors de la suppression du fichier:', error)
+    console.error('Erreur lors de la suppression:', error)
+    return false
   }
 }
 
 // POST - Générer le CV en PDF
 export async function POST(request) {
   try {
-    const { cvData, saveAsCV, isDarkMode } = await request.json()
-
-    // Créer le HTML du CV
-    const htmlContent = generateCVHTML(cvData, isDarkMode)
-
-    // Générer le PDF avec Puppeteer
-    const pdfBuffer = await generatePDF(htmlContent)
-
-    // Upload vers Supabase Storage
-    const fileName = `cv_${Date.now()}.pdf`
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
-
-    // Si saveAsCV est true, supprimer l'ancien CV s'il existe
-    if (saveAsCV) {
-      try {
-        // Récupérer l'ancien CV URL
-        const { data: userData, error: userError } = await supabase
-          .from('moi')
-          .select('cv_url')
-          .eq('id', 1)
-          .single()
-
-        if (!userError && userData && userData.cv_url) {
-          const oldFileName = extractFileNameFromUrl(userData.cv_url)
-          if (oldFileName) {
-            console.log(`Suppression de l'ancien CV: ${oldFileName}`)
-            await deleteFileFromStorage(supabase, oldFileName)
-          }
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération/suppression de l\'ancien CV:', error)
-      }
+    const { cvData, isDarkMode, saveAsCV } = await request.json()
+    
+    if (!cvData) {
+      return NextResponse.json({ error: 'Données CV manquantes' }, { status: 400 })
     }
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('docs')
-      .upload(fileName, pdfBuffer, {
-        contentType: 'application/pdf',
-        cacheControl: '3600'
+    // Générer le HTML du CV
+    const htmlContent = generateCVHTML(cvData, isDarkMode)
+    
+    let browser
+
+    if (process.env.NODE_ENV === 'production') {
+      // Configuration de Chromium pour Vercel
+      const executablePath = await chromium.executablePath()
+      
+      // Lancer le navigateur avec Puppeteer-core
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: executablePath,
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
+      })
+    } else {
+      // En local : utiliser Puppeteer normal
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      })
+    }
+
+    try {
+      const page = await browser.newPage()
+      
+      // Définir le contenu HTML
+      await page.setContent(htmlContent, { waitUntil: 'networkidle0' })
+      
+      // Générer le PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20mm',
+          right: '20mm',
+          bottom: '20mm',
+          left: '20mm'
+        }
       })
 
-    if (uploadError) {
-      console.error('Erreur lors de l\'upload du PDF:', uploadError)
-      return NextResponse.json(
-        { success: false, error: 'Erreur lors de l\'upload du PDF' },
-        { status: 500 }
+      // Fermer le navigateur
+      await browser.close()
+
+      // Générer un nom de fichier unique
+      const timestamp = Date.now()
+      const fileName = `cv_${timestamp}.pdf`
+      
+      // Créer le client Supabase
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
       )
-    }
+      
+      // Upload du PDF vers Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('docs')
+        .upload(fileName, pdfBuffer, {
+          contentType: 'application/pdf',
+          cacheControl: '3600'
+        })
 
-    // Obtenir l'URL publique
-    const { data: { publicUrl } } = supabase.storage
-      .from('docs')
-      .getPublicUrl(fileName)
-
-    // Si saveAsCV est true, mettre à jour la base de données
-    if (saveAsCV) {
-      const { error: updateError } = await supabase
-        .from('moi')
-        .update({ cv_url: publicUrl })
-        .eq('id', 1) // Supposons que l'utilisateur a l'ID 1
-
-      if (updateError) {
-        console.error('Erreur lors de la mise à jour du CV:', updateError)
-        return NextResponse.json(
-          { success: false, error: 'Erreur lors de la sauvegarde du CV' },
-          { status: 500 }
-        )
+      if (uploadError) {
+        console.error('Erreur lors de l\'upload:', uploadError)
+        return NextResponse.json({ error: 'Erreur lors de l\'upload du PDF' }, { status: 500 })
       }
-    } else {
-      // Pour les CV temporaires, programmer la suppression après 3 minutes
-      setTimeout(async () => {
-        console.log(`Suppression automatique du CV temporaire: ${fileName}`)
-        await deleteFileFromStorage(supabase, fileName)
-      }, 3 * 60 * 1000) // 3 minutes en millisecondes
-    }
 
-    return NextResponse.json({
-      success: true,
-      downloadUrl: publicUrl,
-      message: saveAsCV ? 'CV généré et sauvegardé avec succès' : 'CV généré avec succès (sera supprimé automatiquement dans 3 minutes)'
-    })
+      // Obtenir l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from('docs')
+        .getPublicUrl(fileName)
+
+      // Si on doit sauvegarder dans le profil, mettre à jour la base de données
+      if (saveAsCV) {
+        // Vérifier s'il y a déjà un CV sauvegardé
+        const { data: existingProfile } = await supabase
+          .from('moi')
+          .select('cv_url')
+          .single()
+
+        if (existingProfile?.cv_url) {
+          // Supprimer l'ancien CV du storage
+          const oldFileName = extractFileNameFromUrl(existingProfile.cv_url)
+          if (oldFileName) {
+            console.log(`Suppression de l'ancien CV: ${oldFileName}`)
+            await deleteFileFromStorage(oldFileName)
+          }
+        }
+
+        // Mettre à jour le profil avec le nouveau CV
+        const { error: updateError } = await supabase
+          .from('moi')
+          .update({ cv_url: publicUrl })
+          .eq('id', 1) // Assumant qu'il n'y a qu'un seul profil
+
+        if (updateError) {
+          console.error('Erreur lors de la mise à jour du profil:', updateError)
+          return NextResponse.json({ error: 'Erreur lors de la sauvegarde du CV' }, { status: 500 })
+        }
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'CV sauvegardé avec succès',
+          pdfUrl: publicUrl,
+          fileName: fileName
+        })
+      } else {
+        // Pour les CV temporaires, programmer la suppression automatique
+        setTimeout(async () => {
+          console.log(`Suppression automatique du CV temporaire: ${fileName}`)
+          await deleteFileFromStorage(fileName)
+        }, 3 * 60 * 1000) // 3 minutes en millisecondes
+
+        return NextResponse.json({ 
+          success: true, 
+          message: 'CV généré avec succès',
+          pdfUrl: publicUrl,
+          fileName: fileName
+        })
+      }
+
+    } catch (browserError) {
+      console.error('Erreur lors de la génération du PDF:', browserError)
+      if (browser) await browser.close()
+      return NextResponse.json({ error: 'Erreur lors de la génération du PDF' }, { status: 500 })
+    }
 
   } catch (error) {
     console.error('Erreur lors de la génération du CV:', error)
-    return NextResponse.json(
-      { success: false, error: 'Erreur lors de la génération du CV' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erreur lors de la génération du CV' }, { status: 500 })
   }
 }
 
@@ -298,32 +363,4 @@ const generateCVHTML = (cvData, isDarkMode) => {
       </body>
     </html>
   `
-}
-
-// Fonction pour générer le PDF avec Puppeteer
-async function generatePDF(htmlContent) {
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  })
-
-  try {
-    const page = await browser.newPage()
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' })
-    
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '2cm',
-        right: '2cm',
-        bottom: '2cm',
-        left: '2cm'
-      }
-    })
-
-    return pdfBuffer
-  } finally {
-    await browser.close()
-  }
 }

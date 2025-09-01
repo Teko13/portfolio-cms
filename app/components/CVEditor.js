@@ -315,10 +315,10 @@ export default function CVEditor() {
       })
 
       if (response.success) {
-        if (response.downloadUrl) {
+        if (response.pdfUrl) {
           // Télécharger le fichier
           const link = document.createElement('a')
-          link.href = response.downloadUrl
+          link.href = response.pdfUrl
           link.download = 'CV_Fabrice_Folly.pdf'
           document.body.appendChild(link)
           link.click()
