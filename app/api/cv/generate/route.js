@@ -131,11 +131,11 @@ const generateCVHTML = (cvData, isDarkMode) => {
   
   const renderContent = (section) => {
     if (typeof section.content === 'string') {
-      return `<p class="text-sm text-gray-800 leading-relaxed mb-3" style="font-size: 10px;">${section.content || 'Contenu à ajouter...'}</p>`
+      return `<p class="text-sm text-gray-800 leading-relaxed mb-3" style="font-size: 12px;">${section.content || 'Contenu à ajouter...'}</p>`
     }
     
     if (!section.content || !Array.isArray(section.content) || section.content.length === 0) {
-      return `<p class="text-sm text-gray-600 mb-3" style="font-size: 10px;">Aucun contenu ajouté</p>`
+      return `<p class="text-sm text-gray-600 mb-3" style="font-size: 12px;">Aucun contenu ajouté</p>`
     }
 
     return section.content.map((element, index) => {
@@ -144,13 +144,13 @@ const generateCVHTML = (cvData, isDarkMode) => {
           return `<h4 class="font-semibold text-sm mb-2 mt-4 first:mt-0 text-black" style="font-size: 12px;">${element.content}</h4>`
         
         case 'text':
-          return `<p class="text-sm text-gray-800 leading-relaxed mb-3" style="font-size: 10px;">${element.content.replace(/\n/g, '<br>')}</p>`
+          return `<p class="text-sm text-gray-800 leading-relaxed mb-3" style="font-size: 12px;">${element.content.replace(/\n/g, '<br>')}</p>`
         
         case 'list':
           if (element.content && Array.isArray(element.content) && element.content.length > 0) {
-            return `<ul class="list-disc list-inside text-sm mb-3 ml-4 text-gray-800" style="font-size: 10px;">${element.content.map(item => `<li class="mb-1">${item}</li>`).join('')}</ul>`
+            return `<ul class="list-disc list-inside text-sm mb-3 ml-4 text-gray-800" style="font-size: 12px;">${element.content.map(item => `<li class="mb-1">${item}</li>`).join('')}</ul>`
           } else {
-            return `<ul class="list-disc list-inside text-sm mb-3 ml-4 text-gray-600" style="font-size: 10px;"><li>Aucun élément dans la liste</li></ul>`
+            return `<ul class="list-disc list-inside text-sm mb-3 ml-4 text-gray-600" style="font-size: 12px;"><li>Aucun élément dans la liste</li></ul>`
           }
         
         default:
@@ -251,13 +251,13 @@ const generateCVHTML = (cvData, isDarkMode) => {
           p {
             margin-bottom: 2mm;
             color: ${isDarkMode ? '#cccccc' : '#333333'};
-            font-size: 10px;
+            font-size: 12px;
             line-height: 1.4;
           }
           ul {
             margin-bottom: 2mm;
             color: ${isDarkMode ? '#cccccc' : '#333333'};
-            font-size: 10px;
+            font-size: 12px;
           }
           li {
             margin-bottom: 0.5mm;
