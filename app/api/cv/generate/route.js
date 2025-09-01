@@ -164,17 +164,14 @@ export async function POST(request) {
           fileName: fileName
         })
       } else {
-        // Pour les CV temporaires, programmer la suppression automatique
-        setTimeout(async () => {
-          console.log(`Suppression automatique du CV temporaire: ${fileName}`)
-          await deleteFileFromStorage(fileName)
-        }, 3 * 60 * 1000) // 3 minutes en millisecondes
-
-        return NextResponse.json({ 
-          success: true, 
-          message: 'CV généré avec succès',
-          pdfUrl: publicUrl,
-          fileName: fileName
+        // Pour les CV temporaires : streamer directement le PDF sans stockage
+        return new NextResponse(pdfBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="CV_Fabrice_Folly.pdf"',
+            'Content-Length': pdfBuffer.length.toString()
+          }
         })
       }
 

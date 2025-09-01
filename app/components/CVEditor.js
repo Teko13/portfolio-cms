@@ -308,26 +308,61 @@ export default function CVEditor() {
     setMessage('')
 
     try {
-      const response = await api.post('/api/cv/generate', {
-        cvData,
-        saveAsCV,
-        isDarkMode
-      })
+      if (saveAsCV) {
+        // Mode sauvegarde : appel API normal avec réponse JSON
+        const response = await api.post('/api/cv/generate', {
+          cvData,
+          saveAsCV,
+          isDarkMode
+        })
 
-      if (response.success) {
-        if (response.pdfUrl) {
-          // Télécharger le fichier
+        if (response.success) {
+          if (response.pdfUrl) {
+            // Télécharger le fichier
+            const link = document.createElement('a')
+            link.href = response.pdfUrl
+            link.download = 'CV_Fabrice_Folly.pdf'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+          }
+          
+          setMessage('CV généré et sauvegardé avec succès')
+        } else {
+          setMessage(response.error || 'Erreur lors de la génération du CV')
+        }
+      } else {
+        // Mode téléchargement direct : appel API avec streaming PDF
+        const response = await fetch('/api/cv/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include', // Utiliser les cookies comme l'utilitaire api
+          body: JSON.stringify({
+            cvData,
+            saveAsCV,
+            isDarkMode
+          })
+        })
+
+        if (response.ok) {
+          // Créer un blob et télécharger directement
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
           const link = document.createElement('a')
-          link.href = response.pdfUrl
+          link.href = url
           link.download = 'CV_Fabrice_Folly.pdf'
           document.body.appendChild(link)
           link.click()
           document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+          
+          setMessage('CV généré avec succès')
+        } else {
+          const errorData = await response.json()
+          setMessage(errorData.error || 'Erreur lors de la génération du CV')
         }
-        
-        setMessage(saveAsCV ? 'CV généré et sauvegardé avec succès' : 'CV généré avec succès')
-      } else {
-        setMessage(response.error || 'Erreur lors de la génération du CV')
       }
     } catch (error) {
       console.error('Erreur lors de la génération du CV:', error)
