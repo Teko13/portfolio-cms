@@ -74,33 +74,62 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
     })
   }
 
-  const renderPage = (sections, pageNumber, isLastPage = false) => (
-    <div 
-      key={pageNumber}
-      className={`mx-auto mb-8 relative transition-all duration-300 ${
-        isDarkMode 
-          ? 'bg-black shadow-xl border border-gray-700' 
-          : 'bg-white shadow-lg border-2 border-gray-300'
-      }`}
-      style={{
-        width: '210mm',
-        minHeight: '297mm',
-        padding: '20mm',
-        boxSizing: 'border-box',
-        borderRadius: '2px'
-      }}
-    >
-      {/* Numéro de page en haut à droite */}
-      <div className={`absolute top-4 right-4 text-xs font-medium ${
-        isDarkMode ? 'text-gray-400' : 'text-gray-500'
-      }`}>
-        Page {pageNumber}
-      </div>
-      
-      {/* Contenu de la page */}
-      <div className="h-full">
-        {/* En-tête avec informations personnelles (seulement sur la première page) */}
-        {pageNumber === 1 && (
+  // Fonction pour formater une date
+  const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleDateString('fr-FR', { 
+      year: 'numeric', 
+      month: 'long' 
+    })
+  }
+
+  return (
+    <div className="flex h-screen bg-black">
+      {/* Colonne gauche - Rendu CV (2/3 de la largeur) */}
+      <div className="w-2/3 p-8 overflow-y-auto">
+        <div className="mb-6">
+          <div className="text-white text-lg font-semibold mb-3">
+            Rendu cv {isDarkMode ? '🌙' : '☀️'}
+          </div>
+          
+          {/* Switch de basculement thème */}
+          <div className="flex items-center space-x-3">
+            <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-400'}`}>Mode sombre</span>
+            <button
+              onClick={toggleTheme}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isDarkMode 
+                  ? 'bg-blue-600' 
+                  : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${
+                  isDarkMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-sm ${!isDarkMode ? 'text-white' : 'text-gray-400'}`}>Mode clair</span>
+          </div>
+        </div>
+
+        {/* CV en un seul bloc */}
+        <div 
+          className={`mx-auto relative transition-all duration-300 ${
+            isDarkMode 
+              ? 'bg-black shadow-xl border border-gray-700' 
+              : 'bg-white shadow-lg border-2 border-gray-300'
+          }`}
+          style={{
+            width: '210mm',
+            minHeight: '297mm',
+            padding: '20mm',
+            boxSizing: 'border-box',
+            borderRadius: '2px'
+          }}
+        >
+          {/* En-tête avec informations personnelles */}
           <div className={`text-center mb-8 pb-4 border-b-2 ${
             isDarkMode ? 'border-gray-600' : 'border-gray-300'
           }`}>
@@ -127,143 +156,39 @@ const CVPreview = ({ cvData, sidebar, isDarkMode, onThemeChange }) => {
               {cvData.personalInfo?.linkedin && <div>{cvData.personalInfo.linkedin}</div>}
             </div>
           </div>
-        )}
 
-        {/* Sections du CV */}
-        <div className="space-y-6">
-          {sections.map((section, index) => (
-            <div key={section.id} className="section">
-              <h2 className={`text-lg font-bold mb-3 uppercase tracking-wide border-b pb-1 ${
-                isDarkMode 
-                  ? 'text-white border-gray-600' 
-                  : 'text-black border-gray-300'
-              }`}>
-                {section.title}
-              </h2>
-              <div className="section-content">
-                {renderContent(section)}
+          {/* Sections du CV */}
+          <div className="space-y-6">
+            {cvData.sections.map((section, index) => (
+              <div key={section.id} className="section">
+                <h2 className={`text-lg font-bold mb-3 uppercase tracking-wide border-b pb-1 ${
+                  isDarkMode 
+                    ? 'text-white border-gray-600' 
+                    : 'text-black border-gray-300'
+                }`}>
+                  {section.title}
+                </h2>
+                <div className="section-content">
+                  {renderContent(section)}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Pied de page */}
-      <div className={`absolute bottom-4 left-4 right-4 text-center text-xs border-t pt-2 ${
-        isDarkMode 
-          ? 'text-gray-400 border-gray-600' 
-          : 'text-gray-500 border-gray-200'
-      }`}>
-        CV généré le {new Date().toLocaleDateString('fr-FR')}
-      </div>
-    </div>
-  )
-
-  // Fonction pour diviser le contenu en pages
-  const splitContentIntoPages = () => {
-    const sections = cvData.sections.sort((a, b) => a.order - b.order)
-    const pages = []
-    let currentPage = []
-    
-    // Approche simple : mettre plusieurs sections par page
-    // On va essayer de mettre 2-3 sections par page selon leur taille
-    sections.forEach((section, index) => {
-      // Si c'est la première section ou si on a déjà 2 sections sur la page courante
-      // et que la section actuelle semble "lourde" (compétences), commencer une nouvelle page
-      const isHeavySection = section.title.toLowerCase().includes('compétences') || 
-                            section.title.toLowerCase().includes('projets')
-      
-      if (index === 0) {
-        // Première section : toujours sur la première page
-        currentPage.push(section)
-      } else if (currentPage.length >= 2 && isHeavySection) {
-        // Section lourde après 2 sections : nouvelle page
-        pages.push([...currentPage])
-        currentPage = [section]
-      } else if (currentPage.length >= 3) {
-        // Après 3 sections : nouvelle page
-        pages.push([...currentPage])
-        currentPage = [section]
-      } else {
-        // Sinon : continuer sur la page courante
-        currentPage.push(section)
-      }
-    })
-
-    // Ajouter la dernière page
-    if (currentPage.length > 0) {
-      pages.push(currentPage)
-    }
-
-    return pages
-  }
-
-  // Fonction pour formater une date
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('fr-FR', { 
-      year: 'numeric', 
-      month: 'long' 
-    })
-  }
-
-  const pages = splitContentIntoPages()
-
-  return (
-    <div className="flex h-screen bg-black">
-      {/* Colonne gauche - Rendu CV (2/3 de la largeur) */}
-      <div className="w-2/3 p-8 overflow-y-auto">
-        <div className="mb-6">
-          <div className="text-white text-lg font-semibold mb-3">
-            Rendu cv {isDarkMode ? '🌙' : '☀️'}
+            ))}
           </div>
-          
-          {/* Switch de basculement thème */}
-          <div className="flex items-center space-x-3">
-            <span className={`text-sm ${isDarkMode ? 'text-white' : 'text-gray-400'}`}>Mode sombre</span>
-            <button
-              onClick={toggleTheme}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode 
-                  ? 'bg-blue-600' 
-                  : 'bg-gray-400'
-              }`}
-              role="switch"
-              aria-checked={isDarkMode}
-              aria-label={isDarkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${
-                  isDarkMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-sm ${!isDarkMode ? 'text-white' : 'text-gray-400'}`}>Mode clair</span>
-          </div>
-        </div>
-        
-        <div className="flex justify-center">
-          <div className="space-y-0">
-            {pages.map((pageSections, index) => 
-              renderPage(pageSections, index + 1, index === pages.length - 1)
-            )}
+
+          {/* Pied de page */}
+          <div className={`absolute bottom-4 left-4 right-4 text-center text-xs border-t pt-2 ${
+            isDarkMode 
+              ? 'text-gray-400 border-gray-600' 
+              : 'text-gray-500 border-gray-200'
+          }`}>
+            CV généré le {new Date().toLocaleDateString('fr-FR')}
           </div>
         </div>
       </div>
 
       {/* Colonne droite - CV Edition (1/3 de la largeur) */}
       <div className="w-1/3 border-l border-gray-700">
-        <div className="text-white text-lg font-semibold p-6 border-b border-gray-700">
-          CV edition
-        </div>
-        <div className="h-full overflow-y-auto">
-          {sidebar || (
-            <div className="p-6 text-gray-400 text-sm">
-              Interface d'édition à intégrer
-            </div>
-          )}
-        </div>
+        {sidebar}
       </div>
     </div>
   )

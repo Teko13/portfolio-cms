@@ -126,129 +126,151 @@ export async function POST(request) {
 }
 
 // Fonction pour générer le HTML du CV
-function generateCVHTML(cvData, isDarkMode) {
-  const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('fr-FR', { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit' 
-    })
-  }
-
+const generateCVHTML = (cvData, isDarkMode) => {
+  const sections = cvData.sections.sort((a, b) => a.order - b.order)
+  
   const renderContent = (section) => {
-    let content = ''
-    
-    // Gestion de l'ancien format (content est une chaîne)
     if (typeof section.content === 'string') {
-      content = `<p class="text-sm text-gray-800 leading-relaxed mb-3">${section.content || 'Contenu à ajouter...'}</p>`
+      return `<p class="text-sm text-gray-800 leading-relaxed mb-3" style="font-size: 10px;">${section.content || 'Contenu à ajouter...'}</p>`
     }
-    // Gestion du nouveau format (content est un tableau)
-    else if (!section.content || !Array.isArray(section.content) || section.content.length === 0) {
-      content = '<p class="text-sm text-gray-600 mb-3">Aucun contenu ajouté</p>'
-    } else {
-      content = section.content.map(element => {
-        switch (element.type) {
-          case 'subtitle':
-            return `<h4 class="font-semibold text-sm text-black mb-2 mt-4 first:mt-0">${element.content}</h4>`
-          
-          case 'text':
-            return `<p class="text-sm text-gray-800 leading-relaxed mb-3">${element.content.replace(/\n/g, '<br>')}</p>`
-          
-          case 'list':
-            if (element.content && Array.isArray(element.content) && element.content.length > 0) {
-              const listItems = element.content.map(item => `<li class="mb-1">${item}</li>`).join('')
-              return `<ul class="list-disc list-inside text-sm text-gray-800 mb-3 ml-4">${listItems}</ul>`
-            } else {
-              return '<ul class="list-disc list-inside text-sm text-gray-800 mb-3 ml-4"><li class="text-gray-600">Aucun élément dans la liste</li></ul>'
-            }
-          
-          default:
-            return ''
-        }
-      }).join('')
-    }
-
-    return content
-  }
-
-  // Fonction pour diviser le contenu en pages
-  const splitContentIntoPages = () => {
-    const sections = cvData.sections.sort((a, b) => a.order - b.order)
-    const pages = []
-    let currentPage = []
     
-    // Approche simple : mettre plusieurs sections par page
-    // On va essayer de mettre 2-3 sections par page selon leur taille
-    sections.forEach((section, index) => {
-      // Si c'est la première section ou si on a déjà 2 sections sur la page courante
-      // et que la section actuelle semble "lourde" (compétences), commencer une nouvelle page
-      const isHeavySection = section.title.toLowerCase().includes('compétences') || 
-                            section.title.toLowerCase().includes('projets')
-      
-      if (index === 0) {
-        // Première section : toujours sur la première page
-        currentPage.push(section)
-      } else if (currentPage.length >= 2 && isHeavySection) {
-        // Section lourde après 2 sections : nouvelle page
-        pages.push([...currentPage])
-        currentPage = [section]
-      } else if (currentPage.length >= 3) {
-        // Après 3 sections : nouvelle page
-        pages.push([...currentPage])
-        currentPage = [section]
-      } else {
-        // Sinon : continuer sur la page courante
-        currentPage.push(section)
-      }
-    })
-
-    // Ajouter la dernière page
-    if (currentPage.length > 0) {
-      pages.push(currentPage)
+    if (!section.content || !Array.isArray(section.content) || section.content.length === 0) {
+      return `<p class="text-sm text-gray-600 mb-3" style="font-size: 10px;">Aucun contenu ajouté</p>`
     }
 
-    return pages
-  }
-
-  const pages = splitContentIntoPages()
-
-  // Générer le HTML avec des pages séparées explicitement
-  const pagesHTML = pages.map((pageSections, pageIndex) => {
-    const pageNumber = pageIndex + 1
-    const isFirstPage = pageIndex === 0
-    
-    return `
-      <div class="page" style="
-        width: 210mm;
-        height: 297mm;
-        padding: 20mm;
-        box-sizing: border-box;
-        position: relative;
-        background: white;
-        margin: 0 auto 10mm auto;
-        page-break-after: always;
-        page-break-inside: avoid;
-        overflow: hidden;
-      ">
-        <!-- Numéro de page -->
-        <div style="position: absolute; top: 4mm; right: 4mm; font-size: 10px; color: #666;">
-          Page ${pageNumber}
-        </div>
+    return section.content.map((element, index) => {
+      switch (element.type) {
+        case 'subtitle':
+          return `<h4 class="font-semibold text-sm mb-2 mt-4 first:mt-0 text-black" style="font-size: 12px;">${element.content}</h4>`
         
-        <!-- En-tête avec informations personnelles (seulement sur la première page) -->
-        ${isFirstPage ? `
-          <div style="text-align: center; margin-bottom: 8mm; padding-bottom: 4mm; border-bottom: 2px solid #ccc;">
-            <h1 style="font-size: 24px; font-weight: bold; color: black; margin-bottom: 2mm; text-transform: uppercase; letter-spacing: 0.1em;">
-              ${cvData.personalInfo?.name || 'FABRICE FOLLY'}
-            </h1>
-            ${cvData.personalInfo?.title ? `
-              <h2 style="font-size: 16px; font-weight: normal; color: #666; margin-bottom: 2mm;">
-                ${cvData.personalInfo.title}
-              </h2>
-            ` : ''}
-            <div style="font-size: 12px; color: #666; line-height: 1.4;">
+        case 'text':
+          return `<p class="text-sm text-gray-800 leading-relaxed mb-3" style="font-size: 10px;">${element.content.replace(/\n/g, '<br>')}</p>`
+        
+        case 'list':
+          if (element.content && Array.isArray(element.content) && element.content.length > 0) {
+            return `<ul class="list-disc list-inside text-sm mb-3 ml-4 text-gray-800" style="font-size: 10px;">${element.content.map(item => `<li class="mb-1">${item}</li>`).join('')}</ul>`
+          } else {
+            return `<ul class="list-disc list-inside text-sm mb-3 ml-4 text-gray-600" style="font-size: 10px;"><li>Aucun élément dans la liste</li></ul>`
+          }
+        
+        default:
+          return ''
+      }
+    }).join('')
+  }
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>CV - ${cvData.personalInfo?.name || 'FABRICE FOLLY'}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: ${isDarkMode ? '#ffffff' : '#000000'};
+            background-color: ${isDarkMode ? '#000000' : '#ffffff'};
+            margin: 0;
+            padding: 0;
+          }
+          .cv-container {
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20mm;
+            box-sizing: border-box;
+            background-color: ${isDarkMode ? '#000000' : '#ffffff'};
+            color: ${isDarkMode ? '#ffffff' : '#000000'};
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 8mm;
+            padding-bottom: 4mm;
+            border-bottom: 2px solid ${isDarkMode ? '#666' : '#ccc'};
+          }
+          .name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: ${isDarkMode ? '#ffffff' : '#000000'};
+          }
+          .title {
+            font-size: 14px;
+            font-weight: normal;
+            margin-bottom: 2mm;
+            color: ${isDarkMode ? '#cccccc' : '#666666'};
+          }
+          .contact-info {
+            font-size: 10px;
+            color: ${isDarkMode ? '#cccccc' : '#666666'};
+            line-height: 1.4;
+          }
+          .section {
+            margin-bottom: 5mm;
+          }
+          .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 2mm;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid ${isDarkMode ? '#666' : '#ccc'};
+            padding-bottom: 1mm;
+            color: ${isDarkMode ? '#ffffff' : '#000000'};
+          }
+          .section-content {
+            margin-bottom: 2mm;
+          }
+          .footer {
+            position: fixed;
+            bottom: 4mm;
+            left: 4mm;
+            right: 4mm;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 2mm;
+          }
+          h4 {
+            font-weight: 600;
+            margin-bottom: 1.5mm;
+            margin-top: 3mm;
+            color: ${isDarkMode ? '#ffffff' : '#000000'};
+            font-size: 12px;
+          }
+          h4:first-child {
+            margin-top: 0;
+          }
+          p {
+            margin-bottom: 2mm;
+            color: ${isDarkMode ? '#cccccc' : '#333333'};
+            font-size: 10px;
+            line-height: 1.4;
+          }
+          ul {
+            margin-bottom: 2mm;
+            color: ${isDarkMode ? '#cccccc' : '#333333'};
+            font-size: 10px;
+          }
+          li {
+            margin-bottom: 0.5mm;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="cv-container">
+          <!-- En-tête -->
+          <div class="header">
+            <div class="name">${cvData.personalInfo?.name || 'FABRICE FOLLY'}</div>
+            ${cvData.personalInfo?.title ? `<div class="title">${cvData.personalInfo.title}</div>` : ''}
+            <div class="contact-info">
               ${cvData.personalInfo?.age ? `<div>${cvData.personalInfo.age}</div>` : ''}
               ${cvData.personalInfo?.email ? `<div>${cvData.personalInfo.email}</div>` : ''}
               ${cvData.personalInfo?.phone ? `<div>${cvData.personalInfo.phone}</div>` : ''}
@@ -257,87 +279,23 @@ function generateCVHTML(cvData, isDarkMode) {
               ${cvData.personalInfo?.linkedin ? `<div>${cvData.personalInfo.linkedin}</div>` : ''}
             </div>
           </div>
-        ` : ''}
 
-        <!-- Sections du CV pour cette page -->
-        <div style="margin-bottom: 6mm;">
-          ${pageSections.map(section => `
-            <div class="section" style="margin-bottom: 6mm;">
-              <h2 style="font-size: 16px; font-weight: bold; color: black; margin-bottom: 3mm; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #ccc; padding-bottom: 1mm;">
-                ${section.title}
-              </h2>
+          <!-- Sections -->
+          ${sections.map(section => `
+            <div class="section">
+              <h2 class="section-title">${section.title}</h2>
               <div class="section-content">
                 ${renderContent(section)}
               </div>
             </div>
           `).join('')}
+
+          <!-- Pied de page - Supprimé pour le PDF -->
+          <!-- <div class="footer">
+            CV généré le ${new Date().toLocaleDateString('fr-FR')}
+          </div> -->
         </div>
-
-        <!-- Pied de page - Supprimé pour le PDF -->
-        <!-- <div style="position: absolute; bottom: 4mm; left: 4mm; right: 4mm; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #eee; padding-top: 2mm;">
-          CV généré le ${new Date().toLocaleDateString('fr-FR')}
-        </div> -->
-      </div>
-    `
-  }).join('')
-
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>CV - ${cvData.personalInfo.name}</title>
-      <style>
-        @page {
-          size: A4;
-          margin: 0;
-        }
-        body {
-          font-family: 'Times New Roman', serif;
-          line-height: 1.6;
-          color: #333;
-          margin: 0;
-          padding: 0;
-          background: #f5f5f5;
-        }
-        .page {
-          background: white;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-          border: 1px solid #e5e7eb;
-        }
-        .section {
-          page-break-inside: avoid;
-        }
-        h1, h2, h3, h4 {
-          font-family: 'Times New Roman', serif;
-        }
-        ul {
-          margin: 0;
-          padding-left: 20px;
-        }
-        li {
-          margin-bottom: 2px;
-        }
-        @media print {
-          body {
-            background: white;
-          }
-          .page {
-            box-shadow: none;
-            margin: 0;
-            border: none;
-            page-break-after: always;
-          }
-          .page:last-child {
-            page-break-after: auto;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      ${pagesHTML}
-    </body>
+      </body>
     </html>
   `
 }
