@@ -73,6 +73,7 @@ export default function ApiDocsPage() {
               titre: "Portfolio CMS",
               description: "Application de gestion de portfolio...",
               image_url: "https://example.com/image.jpg",
+              video_url: "https://example.com/video.mp4",
               acces_url: "https://example.com",
               source_url: "https://github.com/example",
               category: "Web",
@@ -168,7 +169,7 @@ export default function ApiDocsPage() {
     },
     projets: {
       path: '/api/portfolio/projets',
-      description: 'Récupère la liste des projets avec leurs détails, images et liens',
+      description: 'Récupère la liste des projets avec leurs détails, images, vidéos et liens',
       response: {
         success: 'boolean',
         data: [
@@ -176,7 +177,8 @@ export default function ApiDocsPage() {
             id: 'number',
             titre: 'string',
             description: 'string',
-            image_url: 'string (URL)',
+            image_url: 'string (URL, nullable)',
+            video_url: 'string (URL, nullable)',
             acces_url: 'string (URL)',
             source_url: 'string (URL)',
             category: 'string',
