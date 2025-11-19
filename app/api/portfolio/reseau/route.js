@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { withCors, handleOptions } from '@/utils/cors'
+
+// OPTIONS - Gérer les requêtes preflight CORS
+export async function OPTIONS() {
+  return handleOptions()
+}
 
 // GET - Récupérer tous les éléments du réseau
 export async function GET() {
@@ -16,16 +22,18 @@ export async function GET() {
 
     if (error) throw error
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: data || [] 
     })
+    return withCors(response)
   } catch (error) {
     console.error('Erreur lors de la récupération du réseau:', error)
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, error: 'Erreur lors de la récupération du réseau' },
       { status: 500 }
     )
+    return withCors(response)
   }
 }
 
