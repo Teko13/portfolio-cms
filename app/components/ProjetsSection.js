@@ -28,6 +28,8 @@ export default function ProjetsSection() {
     index: ''
   })
   const [reordering, setReordering] = useState(false)
+  const [imageMode, setImageMode] = useState('upload') // 'upload' | 'url'
+  const [videoMode, setVideoMode] = useState('upload') // 'upload' | 'url'
 
   // Charger les données au montage du composant
   useEffect(() => {
@@ -96,6 +98,8 @@ export default function ProjetsSection() {
     }
   }
 
+  const isStorageUrl = (url) => url && url.includes('supabase.co/storage')
+
   const handleEdit = (projet) => {
     setEditingId(projet.id)
     setFormData({
@@ -108,6 +112,8 @@ export default function ProjetsSection() {
       category: projet.category || '',
       index: projet.index ? projet.index.toString() : ''
     })
+    setImageMode(isStorageUrl(projet.image_url) ? 'upload' : 'url')
+    setVideoMode(isStorageUrl(projet.video_url) ? 'upload' : 'url')
   }
 
   const handleDelete = async (id) => {
@@ -185,6 +191,8 @@ export default function ProjetsSection() {
     })
     setUploadError('')
     setVideoUploadError('')
+    setImageMode('upload')
+    setVideoMode('upload')
   }
 
   const handleFileChange = async (e) => {
@@ -246,40 +254,26 @@ export default function ProjetsSection() {
   }
 
   const removeImage = async () => {
-    // Si il y a une image_url, la supprimer du storage
-    if (formData.image_url) {
+    if (isStorageUrl(formData.image_url)) {
       try {
-        const result = await api.post('/api/upload/delete', { imageUrl: formData.image_url })
-        console.log('Image supprimée du storage:', formData.image_url)
+        await api.post('/api/upload/delete', { imageUrl: formData.image_url })
       } catch (error) {
         console.error('Erreur lors de la suppression de l\'image:', error)
       }
     }
-
-    // Vider le champ image_url
-    setFormData(prev => ({
-      ...prev,
-      image_url: ''
-    }))
+    setFormData(prev => ({ ...prev, image_url: '' }))
     setUploadError('')
   }
 
   const removeVideo = async () => {
-    // Si il y a une video_url, la supprimer du storage
-    if (formData.video_url) {
+    if (isStorageUrl(formData.video_url)) {
       try {
-        const result = await api.post('/api/upload/delete', { imageUrl: formData.video_url })
-        console.log('Vidéo supprimée du storage:', formData.video_url)
+        await api.post('/api/upload/delete', { imageUrl: formData.video_url })
       } catch (error) {
         console.error('Erreur lors de la suppression de la vidéo:', error)
       }
     }
-
-    // Vider le champ video_url
-    setFormData(prev => ({
-      ...prev,
-      video_url: ''
-    }))
+    setFormData(prev => ({ ...prev, video_url: '' }))
     setVideoUploadError('')
   }
 
@@ -431,171 +425,255 @@ export default function ProjetsSection() {
                     />
                   </div>
 
-                  {/* Upload d'image */}
+                  {/* Image du projet */}
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      Image du projet
-                    </label>
-                    
-                    {formData.image_url ? (
-                      <div className="space-y-3">
-                        <div className="relative">
-                          <img 
-                            src={formData.image_url} 
-                            alt="Aperçu" 
-                            className="w-full h-32 object-cover rounded-lg border border-gray-600"
-                          />
-                          <button
-                            type="button"
-                            onClick={removeImage}
-                            className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
-                            title="Supprimer l'image"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-white">Image du projet</label>
+                      <div className="flex rounded-lg overflow-hidden border border-gray-600 text-xs">
                         <button
                           type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-full px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-900/20 transition-all duration-200"
+                          onClick={() => { setImageMode('upload'); setFormData(prev => ({ ...prev, image_url: '' })); setUploadError('') }}
+                          className={`px-3 py-1 transition-colors duration-150 ${imageMode === 'upload' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-400 hover:text-white'}`}
                         >
-                          Changer l'image
+                          Téléverser
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setImageMode('url'); setFormData(prev => ({ ...prev, image_url: '' })); setUploadError('') }}
+                          className={`px-3 py-1 transition-colors duration-150 ${imageMode === 'url' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                        >
+                          URL directe
                         </button>
                       </div>
-                    ) : (
+                    </div>
+
+                    {imageMode === 'url' ? (
                       <div className="space-y-3">
-                        <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
-                                                  <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*,.svg"
-                          onChange={handleFileChange}
-                          className="hidden"
+                        <input
+                          type="url"
+                          value={formData.image_url}
+                          onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
+                          className="w-full px-4 py-3 border border-gray-600 rounded-lg bg-transparent text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="https://exemple.com/image.png"
                         />
+                        {formData.image_url && (
+                          <div className="relative">
+                            <img
+                              src={formData.image_url}
+                              alt="Aperçu"
+                              className="w-full h-32 object-cover rounded-lg border border-gray-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+                              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                              title="Effacer l'URL"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      formData.image_url ? (
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <img
+                              src={formData.image_url}
+                              alt="Aperçu"
+                              className="w-full h-32 object-cover rounded-lg border border-gray-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={removeImage}
+                              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                              title="Supprimer l'image"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
-                            className="w-full space-y-2"
+                            className="w-full px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-900/20 transition-all duration-200"
                           >
-                            {uploading ? (
-                              <div className="flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-                                <span className="ml-2 text-blue-400">Upload en cours...</span>
-                              </div>
-                            ) : (
-                              <>
-                                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                <div className="text-gray-400">
-                                  <span className="font-medium">Cliquez pour uploader</span>
-                                  <p className="text-sm">PNG, JPG, GIF, SVG jusqu'à 5MB</p>
-                                </div>
-                              </>
-                            )}
+                            Changer l'image
                           </button>
                         </div>
-                        
-                        {uploadError && (
-                          <div className="bg-red-900/20 border border-red-400 rounded-lg p-3">
-                            <p className="text-red-400 text-sm mb-2">{uploadError}</p>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*,.svg"
+                              onChange={handleFileChange}
+                              className="hidden"
+                            />
                             <button
                               type="button"
-                              onClick={retryUpload}
-                              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-all duration-200"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploading}
+                              className="w-full space-y-2"
                             >
-                              Réessayer
+                              {uploading ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                                  <span className="ml-2 text-blue-400">Upload en cours...</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                  </svg>
+                                  <div className="text-gray-400">
+                                    <span className="font-medium">Cliquez pour uploader</span>
+                                    <p className="text-sm">PNG, JPG, GIF, SVG jusqu'à 5MB</p>
+                                  </div>
+                                </>
+                              )}
                             </button>
                           </div>
-                        )}
-                      </div>
+                          {uploadError && (
+                            <div className="bg-red-900/20 border border-red-400 rounded-lg p-3">
+                              <p className="text-red-400 text-sm mb-2">{uploadError}</p>
+                              <button type="button" onClick={retryUpload} className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-all duration-200">
+                                Réessayer
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
                     )}
                   </div>
 
-                  {/* Upload de vidéo */}
+                  {/* Vidéo du projet */}
                   <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      Vidéo du projet
-                    </label>
-                    
-                    {formData.video_url ? (
-                      <div className="space-y-3">
-                        <div className="relative">
-                          <video 
-                            src={formData.video_url} 
-                            controls
-                            className="w-full h-48 object-cover rounded-lg border border-gray-600"
-                          />
-                          <button
-                            type="button"
-                            onClick={removeVideo}
-                            className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
-                            title="Supprimer la vidéo"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-white">Vidéo du projet</label>
+                      <div className="flex rounded-lg overflow-hidden border border-gray-600 text-xs">
                         <button
                           type="button"
-                          onClick={() => videoInputRef.current?.click()}
-                          className="w-full px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-900/20 transition-all duration-200"
+                          onClick={() => { setVideoMode('upload'); setFormData(prev => ({ ...prev, video_url: '' })); setVideoUploadError('') }}
+                          className={`px-3 py-1 transition-colors duration-150 ${videoMode === 'upload' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-400 hover:text-white'}`}
                         >
-                          Changer la vidéo
+                          Téléverser
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setVideoMode('url'); setFormData(prev => ({ ...prev, video_url: '' })); setVideoUploadError('') }}
+                          className={`px-3 py-1 transition-colors duration-150 ${videoMode === 'url' ? 'bg-blue-600 text-white' : 'bg-transparent text-gray-400 hover:text-white'}`}
+                        >
+                          URL directe
                         </button>
                       </div>
-                    ) : (
+                    </div>
+
+                    {videoMode === 'url' ? (
                       <div className="space-y-3">
-                        <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
-                          <input
-                            ref={videoInputRef}
-                            type="file"
-                            accept="video/*"
-                            onChange={handleVideoChange}
-                            className="hidden"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => videoInputRef.current?.click()}
-                            disabled={uploadingVideo}
-                            className="w-full space-y-2"
-                          >
-                            {uploadingVideo ? (
-                              <div className="flex items-center justify-center">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-                                <span className="ml-2 text-blue-400">Upload en cours...</span>
-                              </div>
-                            ) : (
-                              <>
-                                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                                <div className="text-gray-400">
-                                  <span className="font-medium">Cliquez pour uploader</span>
-                                  <p className="text-sm">MP4, WebM, OGG, MOV, AVI jusqu'à 50MB</p>
-                                </div>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                        
-                        {videoUploadError && (
-                          <div className="bg-red-900/20 border border-red-400 rounded-lg p-3">
-                            <p className="text-red-400 text-sm mb-2">{videoUploadError}</p>
+                        <input
+                          type="url"
+                          value={formData.video_url}
+                          onChange={(e) => setFormData(prev => ({ ...prev, video_url: e.target.value }))}
+                          className="w-full px-4 py-3 border border-gray-600 rounded-lg bg-transparent text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                          placeholder="https://exemple.com/video.mp4"
+                        />
+                        {formData.video_url && (
+                          <div className="relative">
+                            <video
+                              src={formData.video_url}
+                              controls
+                              className="w-full h-48 rounded-lg border border-gray-600"
+                            />
                             <button
                               type="button"
-                              onClick={() => videoInputRef.current?.click()}
-                              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-all duration-200"
+                              onClick={() => setFormData(prev => ({ ...prev, video_url: '' }))}
+                              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                              title="Effacer l'URL"
                             >
-                              Réessayer
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
                             </button>
                           </div>
                         )}
                       </div>
+                    ) : (
+                      formData.video_url ? (
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <video
+                              src={formData.video_url}
+                              controls
+                              className="w-full h-48 rounded-lg border border-gray-600"
+                            />
+                            <button
+                              type="button"
+                              onClick={removeVideo}
+                              className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200"
+                              title="Supprimer la vidéo"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => videoInputRef.current?.click()}
+                            className="w-full px-4 py-2 text-blue-400 border border-blue-400 rounded-lg hover:bg-blue-900/20 transition-all duration-200"
+                          >
+                            Changer la vidéo
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-all duration-200">
+                            <input
+                              ref={videoInputRef}
+                              type="file"
+                              accept="video/*"
+                              onChange={handleVideoChange}
+                              className="hidden"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => videoInputRef.current?.click()}
+                              disabled={uploadingVideo}
+                              className="w-full space-y-2"
+                            >
+                              {uploadingVideo ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                                  <span className="ml-2 text-blue-400">Upload en cours...</span>
+                                </div>
+                              ) : (
+                                <>
+                                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                  <div className="text-gray-400">
+                                    <span className="font-medium">Cliquez pour uploader</span>
+                                    <p className="text-sm">MP4, WebM, OGG, MOV, AVI jusqu'à 50MB</p>
+                                  </div>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          {videoUploadError && (
+                            <div className="bg-red-900/20 border border-red-400 rounded-lg p-3">
+                              <p className="text-red-400 text-sm mb-2">{videoUploadError}</p>
+                              <button type="button" onClick={() => videoInputRef.current?.click()} className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-all duration-200">
+                                Réessayer
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
                     )}
                   </div>
 
