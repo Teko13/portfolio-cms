@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import { api } from '@/utils/api'
 import CVVariableBuilder from './CVVariableBuilder'
 
-const VARS_STORAGE_KEY = 'cv_user_variables_v1'
-
 function encodeVar(def) {
   try { return btoa(unescape(encodeURIComponent(JSON.stringify(def)))) } catch { return '' }
 }
@@ -135,31 +133,33 @@ export default function CVEditor() {
     loadSchema()
   }, [])
 
-  // Load saved variables from localStorage
+  // Load saved variables from the database
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(VARS_STORAGE_KEY)
-      if (raw) setUserVars(JSON.parse(raw))
-    } catch {}
-  }, [])
-
-  const persistVars = useCallback((next) => {
-    setUserVars(next)
-    try { localStorage.setItem(VARS_STORAGE_KEY, JSON.stringify(next)) } catch {}
+    async function loadVars() {
+      try {
+        const res = await fetch('/api/cv/variables')
+        const json = await res.json()
+        if (json?.success) setUserVars(json.variables || [])
+      } catch {}
+    }
+    loadVars()
   }, [])
 
   const saveVariable = useCallback((def) => {
-    persistVars((() => {
-      const exists = userVars.some(v => v.id === def.id)
-      return exists ? userVars.map(v => v.id === def.id ? def : v) : [...userVars, def]
-    })())
+    // Mise à jour optimiste de l'UI
+    setUserVars(prev => {
+      const exists = prev.some(v => v.id === def.id)
+      return exists ? prev.map(v => v.id === def.id ? def : v) : [...prev, def]
+    })
     setBuilderOpen(false)
     setEditingVar(null)
-  }, [userVars, persistVars])
+    api.post('/api/cv/variables', { def }).catch(e => console.error('Erreur sauvegarde variable:', e))
+  }, [])
 
   const deleteVariable = useCallback((id) => {
-    persistVars(userVars.filter(v => v.id !== id))
-  }, [userVars, persistVars])
+    setUserVars(prev => prev.filter(v => v.id !== id))
+    api.delete(`/api/cv/variables?id=${encodeURIComponent(id)}`).catch(e => console.error('Erreur suppression variable:', e))
+  }, [])
 
   const restoreLastRange = useCallback(() => {
     const r = lastRangeRef.current
